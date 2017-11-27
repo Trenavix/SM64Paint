@@ -77,7 +77,7 @@ namespace SM64Paint
             MessageBox.Show("W/S: Move Forward/Backward\n" +
                 "A/S: Move Left/Right\n" +
                 "Q/E: Move Up/Down\n" +
-                "Mouse Scroll: Increment Movement Speedn" +
+                "Mouse Scroll: Increment Movement Speed\n" +
                 "Mouse Click & Drag: Rotate Camera\n" +
                 "Right Mouse Click: Paint Nearest Vertex\n" +
                 "Left Shift: Double Movement Speed\n" +
