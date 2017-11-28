@@ -21,6 +21,8 @@ public struct Vertex
 {
     public static readonly int MaxInt16 = 0x7FFF;
     public static UInt32[] CurrentVertexList = new UInt32[0];
+    public static UInt32[][] OriginalVertexMem = new UInt32[30][];
+    public static UInt32[][] EditedVertexMem = new UInt32[30][];
     Int16 X;
     Int16 Y;
     Int16 Z;

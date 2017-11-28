@@ -172,6 +172,7 @@ public class F3D
                 case 0xBD:
                     break;
                 case 0xBF: //TRI1
+                    if (LightingEnabled && !Renderer.ViewNonRGBA) break;
                     GL.Begin(BeginMode.Triangles);
                     for (int j = 5; j < 8; j++)
                     {
@@ -229,6 +230,9 @@ public class F3D
             }
             else switch (DisplayList[i][0]) //Vertex Selection Colour buffer here
                 {
+                    case 0x03:
+                        LightingEnabled = true;
+                        break;
                     case 0x04:
                         UInt32 VTXStart = SM64ROM.readSegmentAddr(returnSegmentAddr(CMD));
                         short numVerts = (short)((CMD[1] >> 4) + 1);
@@ -247,8 +251,11 @@ public class F3D
                         if (CMD[6] >> 4 == 2) { GL.Disable(EnableCap.CullFace); }
                         else if (CMD[6] >> 4 == 0) { GL.Enable(EnableCap.CullFace); GL.CullFace(CullFaceMode.Back); }
                         else if (CMD[6] >> 4 == 1) { GL.Enable(EnableCap.CullFace); GL.CullFace(CullFaceMode.Front); }
+                        if ((CMD[5] & 0x0F) == 2) LightingEnabled = false;
+                        else LightingEnabled = true;
                         break;
                     case 0xBF:
+                        if (LightingEnabled) break;
                         Vertex[] Triangle = new Vertex[3];
                         Color4[] colour = new Color4[3];
                         for (int j = 5; j < 8; j++)

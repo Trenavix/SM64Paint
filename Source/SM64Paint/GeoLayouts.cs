@@ -180,9 +180,10 @@ public class GeoLayouts
             GL.Disable(EnableCap.Blend);
             GL.Disable(EnableCap.Light0);
             GL.Disable(EnableCap.Lighting);
+            GL.Disable(EnableCap.AlphaTest);
             if (F3D.RenderEdges)
             {
-                GL.DepthRange(0.000001, 0.999999f);
+                GL.DepthRange(0.00001, 0.99999f);
             }
             return;
         }

@@ -21,6 +21,7 @@ class Renderer
 {
     public static bool WireFrameMode = false;
     public static bool TextureEnabler = true;
+    public static bool ViewNonRGBA = true;
 
     public static Camera cam = new Camera();
     public static Vector2 lastMousePos = new Vector2();
@@ -52,13 +53,13 @@ class Renderer
         TriCount = 0;
         VertexCount = 0;
         GL.Viewport(ClientRectangle.X, ClientRectangle.Y, RenderPanel.Width, RenderPanel.Height);
-        projection = cam.GetViewMatrix() * Matrix4.CreatePerspectiveFieldOfView(1.0f, Width / (float)Height, 0.00001f, 1000.0f);
+        projection = cam.GetViewMatrix() * Matrix4.CreatePerspectiveFieldOfView(1.0f, Width / (float)Height, 0.0000001f, 1.0f);
         GL.MatrixMode(MatrixMode.Projection);
         GL.LoadMatrix(ref projection);
         InitialiseView();
         if (WireFrameMode) GL.PolygonMode(MaterialFace.FrontAndBack, PolygonMode.Line);
         else GL.PolygonMode(MaterialFace.FrontAndBack, PolygonMode.Fill);
-        GL.Scale(0.0001, 0.0001, 0.0001);
+        GL.Scale(0.000001, 0.000001, 0.000001);
         if (ROMManager.ReadytoLoad)
         {
             GL.Scale(0.01, 0.01, 0.01);
@@ -106,11 +107,11 @@ class Renderer
     public static void RenderColourBuffer(Rectangle ClientRectangle, int Width, int Height, GLControl RenderPanel)
     {
         GL.Viewport(ClientRectangle.X, ClientRectangle.Y, RenderPanel.Width, RenderPanel.Height);
-        projection = cam.GetViewMatrix() * Matrix4.CreatePerspectiveFieldOfView(1.0f, Width / (float)Height, 0.00001f, 1000.0f);
+        projection = cam.GetViewMatrix() * Matrix4.CreatePerspectiveFieldOfView(1.0f, Width / (float)Height, 0.0000001f, 1.0f);
         GL.MatrixMode(MatrixMode.Projection);
         GL.LoadMatrix(ref projection);
         InitialiseView();
-        GL.Scale(0.0001, 0.0001, 0.0001);
+        GL.Scale(0.000001, 0.000001, 0.000001);
         if (ROMManager.ReadytoLoad)
         {
             GL.PolygonMode(MaterialFace.FrontAndBack, PolygonMode.Fill);
@@ -129,7 +130,7 @@ class Renderer
             //StatusLabel.Text = Addr.ToString("x");
             if (Addr != 0) for (uint i = 0; i < Vertex.CurrentVertexList.Length; i++)
             {
-                if (Addr > Vertex.CurrentVertexList[i] - 5 && Addr < Vertex.CurrentVertexList[i] + 5)
+                if (Addr == Vertex.CurrentVertexList[i])
                 {
                     ROMManager.SetVertRGBA(Vertex.CurrentVertexList[i], R, G, B, A);
                     break;
@@ -181,7 +182,7 @@ public class Camera
 {
     public static Vector3 Position = Vector3.Zero;
     public Vector3 Orientation = new Vector3(0f, 0f, 0f);
-    public float MoveSpeed = 0.00002f;
+    public float MoveSpeed = 0.0000002f;
     public float MouseSensitivity = 0.005f;
     public Vector3 CamRotation;
 

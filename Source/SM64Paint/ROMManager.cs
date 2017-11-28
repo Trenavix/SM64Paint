@@ -32,6 +32,15 @@ public class ROMManager
     
     public static void SetVertRGBA(uint Addr, byte R, byte G, byte B, byte A)
     {
+        UInt32 colour = (uint)((R << 24) | (G << 16) | (B << 8) | A);
+        if (colour == SM64ROM.ReadFourBytes(Addr + 12)) return; //If it's the same, don't do anything
+        for (uint i = 29; i >= 1 && i <= 29; i--) //Shift all mem back one
+        {
+            Vertex.OriginalVertexMem[i] = Vertex.OriginalVertexMem[i - 1];
+        }
+        Vertex.OriginalVertexMem[0] = new UInt32[2]; //Set up new undo level
+        Vertex.OriginalVertexMem[0][0] = Addr+12;
+        Vertex.OriginalVertexMem[0][1] = SM64ROM.ReadFourBytes(Addr+12); //Initial RGBA
         SM64ROM.changeByte(Addr + 12, R);
         SM64ROM.changeByte(Addr + 13, G);
         SM64ROM.changeByte(Addr + 14, B);

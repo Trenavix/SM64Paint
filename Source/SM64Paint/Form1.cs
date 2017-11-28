@@ -80,6 +80,7 @@ namespace SM64Paint
                 "Mouse Scroll: Increment Movement Speed\n" +
                 "Mouse Click & Drag: Rotate Camera\n" +
                 "Right Mouse Click: Paint Nearest Vertex\n" +
+                "Ctrl+Z: Undo Vertex Paint\n" +
                 "Left Shift: Double Movement Speed\n" +
                 "T: Toggle Textures\n" +
                 "F: Toggle WireFrame\n" +
@@ -118,23 +119,33 @@ namespace SM64Paint
                 lastMousePos.X = Control.MousePosition.X;
                 lastMousePos.Y = Control.MousePosition.Y;
             }
-            if (state[MouseButton.Left] && pt.Y > 104 && pt.Y < 245 && pt.X > RenderPanel.Width-149 && pt.X < RenderPanel.Width-9 && ControlPanel.Visible) //Colour Picker
+            if (state[MouseButton.Left] && ControlPanel.Visible) //Colour Picker
             {
                 Point cursor = new Point();
                 GetCursorPos(ref cursor);
-                //StatusLabel.Text += cursor.ToString();
-                System.Drawing.Color PxColor = GetColorAt(cursor);
-                this.BackColor = PxColor;
-                RedNum.Value = PxColor.R;
-                GreenNum.Value = PxColor.G;
-                BlueNum.Value = PxColor.B;
-                //AlphaNum.Value = PxColor.A; //All alpha here is 255 so don't copy it
+                Point PaletteLocation = VertexRGBA.PointToScreen(RGBPalette.Location);
+                Point AlphaPaletteLocation = VertexRGBA.PointToScreen(AlphaPalette.Location);
+                if (cursor.X > PaletteLocation.X && cursor.X < PaletteLocation.X + RGBPalette.Size.Width && cursor.Y > PaletteLocation.Y && cursor.Y < PaletteLocation.Y + RGBPalette.Size.Height)
+                {
+                    System.Drawing.Color PxColor = GetColorAt(cursor);
+                    this.BackColor = PxColor;
+                    RedNum.Value = PxColor.R;
+                    GreenNum.Value = PxColor.G;
+                    BlueNum.Value = PxColor.B;
+                    //AlphaNum.Value = PxColor.A; //All alpha here is 255 so don't copy it
+                }
+                else if (cursor.X >= AlphaPaletteLocation.X && cursor.X <= AlphaPaletteLocation.X + AlphaPalette.Size.Width && cursor.Y > AlphaPaletteLocation.Y && cursor.Y < AlphaPaletteLocation.Y + AlphaPalette.Size.Height)
+                {
+                    int right = AlphaPaletteLocation.X + AlphaPalette.Size.Width;
+                    //StatusLabel.Text += cursor.X+", "+right + ", " + AlphaPalette.Size.Width;
+                    int alpha = Convert.ToInt32((double)((double)(right - cursor.X) / AlphaPalette.Size.Width) * (double)255);
+                    if (alpha >= 252) alpha = 255;
+                    else if (alpha <= 4) alpha = 0;
+                    AlphaNum.Value = alpha; 
+                }
             }
-            if (state[MouseButton.Right])
-            {
-                Renderer.EditVertex(ClientRectangle, Width, Height, RenderPanel, pt, (byte)RedNum.Value, (byte)GreenNum.Value, (byte)BlueNum.Value, (byte)AlphaNum.Value);
-            }
-            else Renderer.Render(ClientRectangle, Width, Height, RenderPanel);
+            if (state[MouseButton.Right]) Renderer.EditVertex(ClientRectangle, Width, Height, RenderPanel, pt, (byte)RedNum.Value, (byte)GreenNum.Value, (byte)BlueNum.Value, (byte)AlphaNum.Value);
+            Renderer.Render(ClientRectangle, Width, Height, RenderPanel);
         }
 
         Bitmap screenPixel = new Bitmap(1, 1, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
@@ -200,14 +211,20 @@ namespace SM64Paint
                     oldXYDelta.X = XYEnd.X;
                     oldXYDelta.Y = XYEnd.Y;
                     break;
+                case MouseButtons.Right:
+                    Control control = sender as Control;
+                    state = Mouse.GetState();
+                    Point pt = control.PointToClient(Control.MousePosition);
+                    //Renderer.EditVertex(ClientRectangle, Width, Height, RenderPanel, pt, (byte)RedNum.Value, (byte)GreenNum.Value, (byte)BlueNum.Value, (byte)AlphaNum.Value);
+                    break;
             }
                     
         }
 
         void RenderPanel_MouseWheel(object sender, System.Windows.Forms.MouseEventArgs e)
         {
-            if(Renderer.cam.MoveSpeed > 0f) Renderer.cam.MoveSpeed += 0.0000001f*e.Delta;
-            if(Renderer.cam.MoveSpeed <= 0f) Renderer.cam.MoveSpeed = 0.000005f;
+            if(Renderer.cam.MoveSpeed > 0f) Renderer.cam.MoveSpeed += 0.000000001f*e.Delta;
+            if(Renderer.cam.MoveSpeed <= 0f) Renderer.cam.MoveSpeed = 0.00000005f;
         }
 
         void Application_Idle(object sender, EventArgs e)
@@ -359,7 +376,19 @@ namespace SM64Paint
 
         void RenderPanel_KeyDown(object sender, KeyEventArgs e)
         {
-
+            switch (e.KeyCode)
+            {
+                case Keys.Z:
+                    KeyboardState ctrl = Keyboard.GetState();
+                    if (!ctrl[Key.ControlLeft]) break;
+                    if (Vertex.OriginalVertexMem[0] == null) break;
+                    ROMManager.SM64ROM.WriteFourBytes(Vertex.OriginalVertexMem[0][0], Vertex.OriginalVertexMem[0][1]);
+                    for (uint i = 0; i < 29; i++) //Shift all mem back one
+                    {
+                        Vertex.OriginalVertexMem[i] = Vertex.OriginalVertexMem[i + 1];
+                    }
+                    break;
+            }
         }
 
         void RenderPanel_MouseDown(object sender, System.Windows.Forms.MouseEventArgs e)
@@ -370,6 +399,12 @@ namespace SM64Paint
         void RenderPanel_MouseMove(object sender, System.Windows.Forms.MouseEventArgs e)
         {
 
+        }
+
+        private void nonRGBAModelsToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            ViewNonRGBA.Checked = !ViewNonRGBA.Checked;
+            Renderer.ViewNonRGBA = ViewNonRGBA.Checked;
         }
     }
 
