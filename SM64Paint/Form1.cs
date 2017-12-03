@@ -32,7 +32,7 @@ using System.Runtime.InteropServices;
 
 namespace SM64Paint
 {
-    public partial class Form1 : Form
+    public partial class MainForm : Form
     {
         [DllImport("user32.dll")]
         static extern bool GetCursorPos(ref Point lpPoint);
@@ -44,11 +44,15 @@ namespace SM64Paint
         String currentROMPath;
         bool VertexReading = false;
 
-        public Form1()
+        public MainForm()
         {
             InitializeComponent();
             RenderPanel.Dock = DockStyle.Fill;
             OpenTK.Toolkit.Init();
+            SPropertiesBox.SelectedIndex = 0;
+            TPropertiesBox.SelectedIndex = 0;
+            Bitmap white = new Bitmap(16, 1); Graphics whiteGraphics = Graphics.FromImage(white);
+            whiteGraphics.FillRectangle(System.Drawing.Brushes.White, 0, 0, 16, 1); ColourPreview.Image = white;
             lastMousePos.X = (Bounds.Left + Bounds.Width / 2);
             RenderPanel.MouseDown += new MouseEventHandler(RenderPanel_MouseDown);
             RenderPanel.MouseMove += new MouseEventHandler (RenderPanel_MouseMove);
@@ -81,6 +85,7 @@ namespace SM64Paint
                 "Mouse Click & Drag: Rotate Camera\n" +
                 "Right Mouse Click: Paint Nearest Vertex\n" +
                 "Ctrl+Z: Undo Vertex Paint\n" +
+                "Ctrl+Y: Redo Vertex Paint\n" +
                 "Left Shift: Double Movement Speed\n" +
                 "T: Toggle Textures\n" +
                 "F: Toggle WireFrame\n" +
@@ -144,7 +149,18 @@ namespace SM64Paint
                     AlphaNum.Value = alpha; 
                 }
             }
-            if (state[MouseButton.Right]) Renderer.EditVertex(ClientRectangle, Width, Height, RenderPanel, pt, (byte)RedNum.Value, (byte)GreenNum.Value, (byte)BlueNum.Value, (byte)AlphaNum.Value);
+            if (state[MouseButton.Right]) Renderer.EditVertex
+                (
+                ClientRectangle, 
+                Width, 
+                Height, 
+                RenderPanel, 
+                pt, 
+                (byte)Math.Round(RedNum.Value * ((decimal)Brightness.Value / 20)),
+                (byte)Math.Round(GreenNum.Value * ((decimal)Brightness.Value / 20)),
+                (byte)Math.Round(BlueNum.Value * ((decimal)Brightness.Value / 20)), 
+                (byte)AlphaNum.Value
+                );
             Renderer.Render(ClientRectangle, Width, Height, RenderPanel);
         }
 
@@ -302,7 +318,17 @@ namespace SM64Paint
             Renderer.Render(ClientRectangle, Width, Height, RenderPanel);
             if (AreaComboBox.Items.Count > 1) AreaComboBox.Enabled = true;
             else AreaComboBox.Enabled = false;
+            TextureNumBox.Items.Clear();
             UpdateStatusText();
+            if (ROMManager.SM64ROM.getSegmentStart(0x0E) < 0x1200000) { TexturesGroupBox.Visible = false; groupBoxForce.Visible = false; VertexRGBA.Location = new Point(8, 12); return; }
+            groupBoxForce.Visible = true;
+            TexturesGroupBox.Visible = true;
+            VertexRGBA.Location = new Point(8, 90);
+            for (uint i = 0; i < Textures.TextureArray.Length; i++)
+            {
+                TextureNumBox.Items.Add("Tex" + (i+1));
+            }
+            TextureNumBox.SelectedIndex = 0;
         }
 
         private void LevelArea_SelectedIndexChange(object sender, EventArgs e)
@@ -315,7 +341,18 @@ namespace SM64Paint
 
         private void ForceVertRGBAButton_Click(object sender, EventArgs e)
         {
-            ROMManager.ForceVertRGBA(ForceOpaqueRGBA.Checked);
+            DialogResult warningchoice = MessageBox.Show("Forcing VertRGBA should only be done on levels imported with SM64e and not modified. This is NOT safe and you" +
+                " should back up your ROM in case. Force VertRGBA?", "Warning!", MessageBoxButtons.YesNo);
+            if (warningchoice == DialogResult.No) return;
+            if (!ForceOpaqueRGBA.Checked)
+            {
+                DialogResult layerchoice = MessageBox.Show("The alpha layer can be changed to allow translucency. This however will also change layering to rely on order" +
+                " of drawn faces. Use translucency for alpha layer?", "Translucency", MessageBoxButtons.YesNo);
+                if (layerchoice == DialogResult.No) ROMManager.ForceVertRGBA(ForceOpaqueRGBA.Checked, false);
+                else ROMManager.ForceVertRGBA(ForceOpaqueRGBA.Checked, true);
+                return;
+            }
+            ROMManager.ForceVertRGBA(ForceOpaqueRGBA.Checked, false);
         }
 
         private void button1_Click(object sender, EventArgs e)
@@ -345,9 +382,25 @@ namespace SM64Paint
 
         private void button2_Click(object sender, EventArgs e)
         {
+            for (uint j = 29; j >= 1 && j <= 29; j--) //Shift all mem back one
+            {
+                Vertex.OriginalVertexMem[j] = Vertex.OriginalVertexMem[j - 1];
+            }
+            Vertex.OriginalVertexMem[0] = new UInt32[Vertex.CurrentVertexList.Length][]; //Set up new undo level with all combos
+            for (uint i = 0; i < Vertex.CurrentVertexList.Length; i++)
+            {
+                Vertex.OriginalVertexMem[0][i] = new UInt32[2];
+                Vertex.OriginalVertexMem[0][i][0] = Vertex.CurrentVertexList[i] + 12;
+                Vertex.OriginalVertexMem[0][i][1] = ROMManager.SM64ROM.ReadFourBytes(Vertex.CurrentVertexList[i] + 12); //Initial RGBA
+            }
+            byte R = (byte)Math.Round(RedNum.Value * ((decimal)Brightness.Value / 20));
+            byte G = (byte)Math.Round(GreenNum.Value * ((decimal)Brightness.Value / 20));
+            byte B = (byte)Math.Round(BlueNum.Value * ((decimal)Brightness.Value / 20));
+            byte A = (byte)AlphaNum.Value;
+            UInt32 colour = (uint)((R << 24) | (G << 16) | (B << 8) | A);
             for (int i = 0; i < Vertex.CurrentVertexList.Length; i++)
             {
-                ROMManager.SetVertRGBA(Vertex.CurrentVertexList[i], (byte)RedNum.Value, (byte)GreenNum.Value, (byte)BlueNum.Value, (byte)AlphaNum.Value);
+                ROMManager.SetVertRGBA(Vertex.CurrentVertexList[i], colour);
             }
         }
 
@@ -374,19 +427,42 @@ namespace SM64Paint
 
         }
 
-        void RenderPanel_KeyDown(object sender, KeyEventArgs e)
+        void RenderPanel_KeyDown(object sender, KeyEventArgs e) //Undo and redo, CLEAN THIS CODE SOON PLS
         {
+            KeyboardState ctrl = Keyboard.GetState();
             switch (e.KeyCode)
             {
                 case Keys.Z:
-                    KeyboardState ctrl = Keyboard.GetState();
-                    if (!ctrl[Key.ControlLeft]) break;
-                    if (Vertex.OriginalVertexMem[0] == null) break;
-                    ROMManager.SM64ROM.WriteFourBytes(Vertex.OriginalVertexMem[0][0], Vertex.OriginalVertexMem[0][1]);
-                    for (uint i = 0; i < 29; i++) //Shift all mem back one
+                    if (!ctrl[Key.ControlLeft] || Vertex.OriginalVertexMem[0] == null) break;
+                    for (int j = 29; j > 0; j--) { Vertex.EditedVertexMem[j] = Vertex.EditedVertexMem[j - 1]; } //shift all mem back one (make room for redo)
+                    Vertex.EditedVertexMem[0] = new UInt32[Vertex.OriginalVertexMem[0].Length][];
+                    for (int i = 0; i < Vertex.EditedVertexMem[0].Length; i++) { Vertex.EditedVertexMem[0][i] = new UInt32[2]; }//set new space to this undo
+                    for (uint i = 0; i < Vertex.OriginalVertexMem[0].Length; i++)
                     {
-                        Vertex.OriginalVertexMem[i] = Vertex.OriginalVertexMem[i + 1];
+                        Vertex.EditedVertexMem[0][i][0] = Vertex.OriginalVertexMem[0][i][0];
+                        Vertex.EditedVertexMem[0][i][1] = ROMManager.SM64ROM.ReadFourBytes(Vertex.OriginalVertexMem[0][i][0]); //Write @ addr this colour for all addr+rgba in collection
                     }
+                    for (uint i = 0; i < Vertex.OriginalVertexMem[0].Length; i++)
+                    {
+                        ROMManager.SM64ROM.WriteFourBytes(Vertex.OriginalVertexMem[0][i][0], Vertex.OriginalVertexMem[0][i][1]); //Write @ addr this colour for all addr+rgba in collection
+                    }
+                    for (uint i = 0; i < 29; i++) { Vertex.OriginalVertexMem[i] = Vertex.OriginalVertexMem[i + 1]; } //Shift all mem forward one (forget the undo)
+                    break;
+                case Keys.Y:
+                    if (!ctrl[Key.ControlLeft] || Vertex.EditedVertexMem[0] == null) break;
+                    for (int j = 29; j > 0; j--) { Vertex.OriginalVertexMem[j] = Vertex.OriginalVertexMem[j - 1]; } //Shift all mem back one (make room for undo)
+                    Vertex.OriginalVertexMem[0] = new UInt32[Vertex.EditedVertexMem[0].Length][];
+                    for (int i = 0; i < Vertex.OriginalVertexMem[0].Length; i++) { Vertex.OriginalVertexMem[0][i] = new UInt32[2]; }//set new space to this undo
+                    for (uint i = 0; i < Vertex.EditedVertexMem[0].Length; i++)
+                    {
+                        Vertex.OriginalVertexMem[0][i][0] = Vertex.EditedVertexMem[0][i][0];
+                        Vertex.OriginalVertexMem[0][i][1] = ROMManager.SM64ROM.ReadFourBytes(Vertex.EditedVertexMem[0][i][0]); //Write @ addr this colour for all addr+rgba in collection
+                    }
+                    for (uint i = 0; i < Vertex.EditedVertexMem[0].Length; i++)
+                    {
+                        ROMManager.SM64ROM.WriteFourBytes(Vertex.EditedVertexMem[0][i][0], Vertex.EditedVertexMem[0][i][1]); //Write @ addr this colour for all addr+rgba in collection
+                    }
+                    for (uint i = 0; i < 29; i++) { Vertex.EditedVertexMem[i] = Vertex.EditedVertexMem[i + 1]; } //Shift all mem forward one (forget the redo)
                     break;
             }
         }
@@ -405,6 +481,117 @@ namespace SM64Paint
         {
             ViewNonRGBA.Checked = !ViewNonRGBA.Checked;
             Renderer.ViewNonRGBA = ViewNonRGBA.Checked;
+        }
+
+        private void ControlPanel_Paint(object sender, PaintEventArgs e)
+        {
+            
+        }
+
+        private void TextureNumBox_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            Bitmap Texture;
+            uint index = (uint)TextureNumBox.SelectedIndex;
+            Texture = Textures.RGBA16ToBitMap
+                (
+                Textures.TextureAddrArray[index][0],
+                Textures.TextureAddrArray[index][3],
+                Textures.TextureAddrArray[index][4],
+                Textures.TextureAddrArray[index][1],
+                Textures.TextureAddrArray[index][2]
+                );
+            TexturePreview.Image = Texture;
+            byte SParamByte = ROMManager.SM64ROM.getByte(Textures.F5CMDArray[index][0] + 6);
+            int Sparam = (SParamByte & 0x03);
+            byte TParamByte = ROMManager.SM64ROM.getByte(Textures.F5CMDArray[index][0] + 5);
+            int Tparam = ((TParamByte >> 2) & 0x03);
+            SPropertiesBox.SelectedIndex = Sparam;
+            TPropertiesBox.SelectedIndex = Tparam;
+        }
+
+        private void SPropertiesBox_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (Textures.FirstTexLoad || ROMManager.SM64ROM == null) return;
+            uint index = (uint)TextureNumBox.SelectedIndex;
+            byte SParamByte = ROMManager.SM64ROM.getByte(Textures.F5CMDArray[index][0] + 6);
+            int Sparam = (SParamByte & 0x03);
+            int dif = SPropertiesBox.SelectedIndex-Sparam;
+            for (uint i = 0; i < Textures.F5CMDArray[index].Length; i++)
+            { ROMManager.SM64ROM.changeByte(Textures.F5CMDArray[index][i] + 6, (byte)(SParamByte + dif)); }
+            ROMManager.InitialiseModelLoad();
+        }
+
+        private void TPropertiesBox_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (Textures.FirstTexLoad || ROMManager.SM64ROM == null) return;
+            uint index = (uint)TextureNumBox.SelectedIndex;
+            byte TParamByte = ROMManager.SM64ROM.getByte(Textures.F5CMDArray[index][0] + 5);
+            int Tparam = ((TParamByte >> 2) & 0x03);
+            int dif = TPropertiesBox.SelectedIndex - Tparam;
+            for (uint i = 0; i < Textures.F5CMDArray[index].Length; i++)
+            { ROMManager.SM64ROM.changeByte(Textures.F5CMDArray[index][i] + 5, (byte)(TParamByte + (dif * 4))); }
+            ROMManager.InitialiseModelLoad();
+        }
+
+        private void UpdatePreviewColour()
+        {
+            Bitmap colour = new Bitmap(16, 1);
+            byte A = (byte)AlphaNum.Value;
+            byte R = (byte)Math.Round(RedNum.Value * ((decimal)Brightness.Value / 20));
+            byte G = (byte)Math.Round(GreenNum.Value * ((decimal)Brightness.Value / 20));
+            byte B = (byte)Math.Round(BlueNum.Value * ((decimal)Brightness.Value / 20));
+            Graphics colourGraphics = Graphics.FromImage(colour);
+            SolidBrush brush = new SolidBrush(System.Drawing.Color.FromArgb(A, R, G, B));
+            colourGraphics.FillRectangle(brush, 0, 0, 16, 1);
+            ColourPreview.Image = colour;
+        }
+        //Update preview on any of these calls:
+        private void Brightness_Scroll(object sender, EventArgs e) { UpdatePreviewColour(); }
+        private void RedNum_ValueChanged(object sender, EventArgs e) { UpdatePreviewColour(); }
+        private void GreenNum_ValueChanged(object sender, EventArgs e) { UpdatePreviewColour(); }
+        private void BlueNum_ValueChanged(object sender, EventArgs e) { UpdatePreviewColour(); }
+        private void AlphaNum_ValueChanged(object sender, EventArgs e) { UpdatePreviewColour(); }
+
+        private void PaletteBox1_Click(object sender, EventArgs e) { PaletteSelection(PaletteBox1, e); }
+        private void PaletteBox2_Click(object sender, EventArgs e) { PaletteSelection(PaletteBox2, e); }
+        private void PaletteBox3_Click(object sender, EventArgs e) { PaletteSelection(PaletteBox3, e); }
+        private void PaletteBox4_Click(object sender, EventArgs e) { PaletteSelection(PaletteBox4, e); }
+        private void PaletteBox5_Click(object sender, EventArgs e) { PaletteSelection(PaletteBox5, e); }
+        private void PaletteBox6_Click(object sender, EventArgs e) { PaletteSelection(PaletteBox6, e); }
+        private void PaletteBox7_Click(object sender, EventArgs e) { PaletteSelection(PaletteBox7, e); }
+        private void PaletteBox8_Click(object sender, EventArgs e) { PaletteSelection(PaletteBox8, e); }
+        private void PaletteBox9_Click(object sender, EventArgs e) { PaletteSelection(PaletteBox9, e); }
+        private void PaletteBox10_Click(object sender, EventArgs e) { PaletteSelection(PaletteBox10, e); }
+        private void PaletteBox11_Click(object sender, EventArgs e) { PaletteSelection(PaletteBox11, e); }
+        private void PaletteBox12_Click(object sender, EventArgs e) { PaletteSelection(PaletteBox12, e); }
+        private void PaletteBox13_Click(object sender, EventArgs e) { PaletteSelection(PaletteBox13, e); }
+        private void PaletteBox14_Click(object sender, EventArgs e) { PaletteSelection(PaletteBox14, e); }
+        private void PaletteBox15_Click(object sender, EventArgs e) { PaletteSelection(PaletteBox15, e); }
+        private void PaletteBox16_Click(object sender, EventArgs e) { PaletteSelection(PaletteBox16, e); }
+        private void PaletteSelection(PictureBox PaletteBoxNum, EventArgs e)
+        {
+            System.Windows.Forms.MouseEventArgs me = (System.Windows.Forms.MouseEventArgs)e;
+            if (me.Button == MouseButtons.Left && PaletteBoxNum.Image != null)
+            {
+                Bitmap palettecolour = (Bitmap)PaletteBoxNum.Image;
+                System.Drawing.Color colour = palettecolour.GetPixel(0, 0);
+                RedNum.Value = colour.R;
+                GreenNum.Value = colour.G;
+                BlueNum.Value = colour.B;
+                AlphaNum.Value = colour.A;
+            }
+            else if (me.Button == MouseButtons.Right)
+            {
+                Bitmap colour = new Bitmap(16, 1);
+                byte A = (byte)AlphaNum.Value;
+                byte R = (byte)RedNum.Value;
+                byte G = (byte)GreenNum.Value;
+                byte B = (byte)BlueNum.Value;
+                Graphics colourGraphics = Graphics.FromImage(colour);
+                SolidBrush brush = new SolidBrush(System.Drawing.Color.FromArgb(A, R, G, B));
+                colourGraphics.FillRectangle(brush, 0, 0, 16, 1);
+                PaletteBoxNum.Image = colour;
+            }
         }
     }
 

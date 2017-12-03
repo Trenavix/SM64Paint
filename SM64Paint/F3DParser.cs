@@ -197,7 +197,7 @@ public class F3D
                     Textures.T_Scale = ((CMD[6] & 0x0F) * 0x100 + CMD[7]) / 124f;//0x7C
                     break;
                 case 0xF3:
-                    TextureLoadRoutine(SM64ROM);
+                    if(SM64ROM.getSegmentStart(0x0E) < 0x1200000)TextureLoadRoutine(SM64ROM, 0);
                     break;
                 case 0xF5:
                     Textures.MODE = (byte)(CMD[1] >> 5);
@@ -211,7 +211,7 @@ public class F3D
                     Textures.Width = (uint)Math.Pow(2, WidthPower);
                     Textures.Height = (uint)Math.Pow(2, HeightPower);
                     if(Textures.currentTexAddr == 0) break;
-                    TextureLoadRoutine(SM64ROM);
+                    TextureLoadRoutine(SM64ROM, Offset + (uint)(i * 8));
                     break;
                 case 0xFB:
                     if (RenderEdges) break;
@@ -362,7 +362,7 @@ public class F3D
         GL.Enable(EnableCap.Normalize);
     }
 
-    static void TextureLoadRoutine(ROM SM64ROM)
+    static void TextureLoadRoutine(ROM SM64ROM, uint F5Command)
     {
         TextureIndex = 0xFFFF;
         for (uint j = 0; j < Textures.TextureAddrArray.Length; j++) // Compare currentTexAddr to our texture address array
@@ -378,17 +378,18 @@ public class F3D
             { TextureIndex = j; }
         }
 
-        if (TextureIndex == 0xFFFF)
+        if (TextureIndex == 0xFFFF) //no match found
         {
             Array.Resize(ref Textures.TextureAddrArray, Textures.TextureAddrArray.Length + 1); //insert new slot for new texture
             TextureIndex = (uint)Textures.TextureAddrArray.Length - 1; //Set index to last slot
-            Textures.TextureAddrArray[TextureIndex] = new uint[9]; //new addr, format, & bitsize
+            Textures.TextureAddrArray[TextureIndex] = new uint[8]; //new addr, format, & bitsize
             Array.Resize(ref Textures.TextureArray, Textures.TextureArray.Length + 1);  //Also insert new slot for TexData
+            Array.Resize(ref Textures.F5CMDArray, Textures.F5CMDArray.Length + 1);
+            Textures.F5CMDArray[TextureIndex] = new uint[0];
         }
 
         if (Textures.FirstTexLoad)
         {
-            
             Textures.TextureAddrArray[TextureIndex][0] = Textures.currentTexAddr; //Set addr, mode, and bitsize
             Textures.TextureAddrArray[TextureIndex][1] = Textures.MODE;
             Textures.TextureAddrArray[TextureIndex][2] = Textures.BitSize;
@@ -397,6 +398,9 @@ public class F3D
             Textures.TextureAddrArray[TextureIndex][5] = Textures.SFlags;
             Textures.TextureAddrArray[TextureIndex][6] = Textures.TFlags;
             Textures.TextureArray[TextureIndex] = Textures.LoadTexture(SM64ROM);
+            Array.Resize(ref Textures.F5CMDArray[TextureIndex], Textures.F5CMDArray[TextureIndex].Length + 1);
+            uint F5Index = (uint)Textures.F5CMDArray[TextureIndex].Length - 1;
+            Textures.F5CMDArray[TextureIndex][F5Index] = F5Command;
         }
         GL.BindTexture(TextureTarget.Texture2D, Textures.TextureArray[TextureIndex]);
     }

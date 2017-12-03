@@ -39,7 +39,6 @@ class Renderer
 
     public static void InitialiseView()
     {
-        GL.ClearStencil(0);
         GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
         modelview = Matrix4.LookAt(Vector3.Zero, Vector3.UnitZ, Vector3.UnitY);
         GL.MatrixMode(MatrixMode.Modelview);
@@ -132,7 +131,17 @@ class Renderer
             {
                 if (Addr == Vertex.CurrentVertexList[i])
                 {
-                    ROMManager.SetVertRGBA(Vertex.CurrentVertexList[i], R, G, B, A);
+                    UInt32 colour = (uint)((R << 24) | (G << 16) | (B << 8) | A);
+                    if (colour == ROMManager.SM64ROM.ReadFourBytes(Addr + 12)) return; //If it's the same, don't do anything
+                    for (uint j = 29; j >= 1 && j <= 29; j--) //Shift all mem back one
+                    {
+                        Vertex.OriginalVertexMem[j] = Vertex.OriginalVertexMem[j - 1];
+                    }
+                    Vertex.OriginalVertexMem[0] = new UInt32[1][]; //Set up new undo level with one combo
+                    Vertex.OriginalVertexMem[0][0] = new UInt32[2]; 
+                    Vertex.OriginalVertexMem[0][0][0] = Addr + 12;
+                    Vertex.OriginalVertexMem[0][0][1] = ROMManager.SM64ROM.ReadFourBytes(Addr + 12); //Initial RGBA
+                    ROMManager.SetVertRGBA(Vertex.CurrentVertexList[i], colour);
                     break;
                 }
             }

@@ -24,7 +24,8 @@ public class Textures
 {
     public static bool FirstTexLoad = false;
     public static int[] TextureArray = new int[0];
-    public static uint[][] TextureAddrArray = new uint[0][]; //Array of Addr and format
+    public static uint[][] TextureAddrArray = new uint[0][]; //Array of Addr and properties
+    public static uint[][] F5CMDArray = new uint[0][]; //List of rendertile F5 commands for each texture, used for S/T param modding 
     public static readonly byte RGBAMODE = 0;
     public static readonly byte YUVMODE = 1;
     public static readonly byte CIMODE = 2;
@@ -262,5 +263,29 @@ public class Textures
     {
         GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.Linear);
         GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Linear);
+    }
+
+
+    public static Bitmap RGBA16ToBitMap(uint addr, uint width, uint height, uint format, uint bitsize)
+    {
+        ROM SM64ROM = ROMManager.SM64ROM;
+        if (width == 0 || height == 0) return new Bitmap(1, 1);
+        Bitmap texture = new Bitmap((Int32)width, (Int32)height);
+        Graphics textureGraphics = Graphics.FromImage(texture);
+        int x = 0;
+        int y = 0;
+        for (uint i=0; i<width*height;i++)
+        {
+            uint texel = addr+i * 2;
+            byte red = (byte)((SM64ROM.getByte(texel) >> 3)*8);
+            byte green = (byte)((((SM64ROM.getByte(texel) << 2) & 0x1F) | (SM64ROM.getByte(texel+1) >> 6))*8);
+            byte blue = (byte)(((SM64ROM.getByte(texel+1) >> 1) & 0x1F)*8);
+            byte alpha = (byte)((SM64ROM.getByte(texel+1) & 0x01)*255);
+            SolidBrush brush = new SolidBrush(Color.FromArgb(alpha, red, green, blue));
+            textureGraphics.FillRectangle(brush, x, y, 1, 1);
+            x++;
+            if (x > width) { x -= (int)width; y += 1; }
+        }
+        return texture;
     }
 }
