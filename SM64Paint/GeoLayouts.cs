@@ -24,9 +24,15 @@ public class GeoLayouts
     public static uint[] OpaqueModels;
     public static uint[] AlphaModels;
     public static uint ExtAlphaDLPointer = 0; //Needed to repoint in extended roms
+    public static uint[][] ExtDLPointers;
 
     public static void ParseGeoLayout(ROM SM64ROM, uint offset, bool ColourBuffer)
     {
+        if (Textures.FirstTexLoad)
+        {
+            ExtDLPointers = new uint[7][];
+            for (int i = 0; i < 7; i++) ExtDLPointers[i] = new uint[0];
+        } 
         OpaqueRendered = false;
         DecodeGeoLayout(SM64ROM, offset, ColourBuffer);
         OpaqueRendered = true;
@@ -116,6 +122,9 @@ public class GeoLayouts
                     segaddr = SM64ROM.ReadFourBytes(i + 4);
                     DecideBufferAndAddr(SM64ROM.getByte(i + 1), segaddr, ColourBuffer);
                     F3D.ParseF3DDL(SM64ROM, segaddr, ColourBuffer);
+                    if (!Textures.FirstTexLoad) break;
+                    Array.Resize(ref ExtDLPointers[drawlayer], ExtDLPointers[drawlayer].Length + 1); //Increase size by one to add
+                    ExtDLPointers[drawlayer][ExtDLPointers[drawlayer].Length-1] = i; //set last index to addr
                     break;
                 case 0x16:
                     increment = 8;
@@ -146,7 +155,7 @@ public class GeoLayouts
                     increment = 4;
                     break;
             }
-            /*using (System.IO.StreamWriter file = new System.IO.StreamWriter(@"e:\test4.txt", true)) //Debug Txt
+            /*if(Textures.FirstTexLoad)using (System.IO.StreamWriter file = new System.IO.StreamWriter(@"e:\test4.txt", true)) //Debug Txt
             {
                 file.Write(i.ToString("x") + ": ");
                 for (uint j = i; j < i + increment; j++)

@@ -210,7 +210,7 @@ public class Camera
     {
         Vector3 offset = new Vector3();
 
-        Vector3 forward = new Vector3((float)Math.Cos((float)Orientation.X), (float)(2 * Math.Sin((float)Orientation.Y)), (float)Math.Sin((float)Orientation.X));
+        Vector3 forward = new Vector3((float)(Math.Cos((float)Orientation.X) * Math.Cos((float)Orientation.Y)), (float)Math.Sin((float)Orientation.Y), (float)(Math.Sin((float)Orientation.X) * Math.Cos((float)Orientation.Y)));
         Vector3 right = new Vector3(-forward.Z, 0, forward.X);
 
         offset += x * right;

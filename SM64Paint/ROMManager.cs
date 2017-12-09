@@ -9,7 +9,9 @@
 *                                                                           *
 ****************************************************************************/
 
+using OpenTK;
 using System;
+using System.Drawing;
 using System.IO;
 
 public class ROMManager
@@ -17,7 +19,7 @@ public class ROMManager
     public static bool ReadytoLoad = false;
     public static ROM SM64ROM;
 
-    public static void LoadROM(String BinDirectory)
+    public static void LoadROM(String BinDirectory, Rectangle ClientRectangle, GLControl RenderPanel, int Width = 0, int Height = 0)
     {
         using (FileStream fs = new FileStream(BinDirectory, FileMode.Open, FileAccess.Read))
         {
@@ -27,7 +29,7 @@ public class ROMManager
             SM64ROM = NewBTBin;
             fs.Close();
         }
-        ROMManager.InitialiseModelLoad();
+        InitialiseModelLoad(ClientRectangle, RenderPanel, Width, Height);
     }
     
     public static void SetVertRGBA(uint Addr, UInt32 colour)
@@ -35,29 +37,21 @@ public class ROMManager
         SM64ROM.WriteFourBytes(Addr + 12, colour);
     }
 
-    public static void ForceVertRGBA(bool Opaque, bool translucency)
+    public static void ForceVertRGBA(bool Opaque)
     {
-        uint[] addresses;
-        if(Opaque) addresses = GeoLayouts.OpaqueModels;
-        else addresses = GeoLayouts.AlphaModels;
-        for (int i = 0; i < addresses.Length; i++)
+        int addresscount;
+        if(Opaque) addresscount = GeoLayouts.OpaqueModels.Length;
+        else addresscount = GeoLayouts.AlphaModels.Length;
+        for (int i = 0; i < addresscount; i++)
         {
-            ForceVertRGBAJump(addresses[i], Opaque, translucency);
+            if(Opaque)ForceVertRGBAJump(GeoLayouts.OpaqueModels[i], true);
+            else ForceVertRGBAJump(GeoLayouts.AlphaModels[i], false);
+            InitialiseModelLoad(Rectangle.Empty, new GLControl()); //init without rendering
+            GeoLayouts.ParseGeoLayout(ROMManager.SM64ROM, LevelScripts.getGeoAddress(Renderer.LevelArea), false);
         }
     }
 
-    public static void ForceVertNorms(bool Opaque)
-    {
-        uint[] addresses;
-        if (Opaque) addresses = GeoLayouts.OpaqueModels;
-        else addresses = GeoLayouts.AlphaModels;
-        for (int i = 0; i < addresses.Length; i++)
-        {
-            ForceVertNormsJump(addresses[i]);
-        }
-    }
-
-    private static void ForceVertRGBAJump(uint addr, bool Opaque, bool translucency)
+    private static void ForceVertRGBAJump(uint addr, bool Opaque)
     {
         bool B7Added = false;
         for (uint j = addr; j < SM64ROM.getEndROMAddr(); j += 8) //Check if B7 is already at end of DL
@@ -73,42 +67,106 @@ public class ROMManager
             if (SM64ROM.getByte(j) == 0xB6)
             {
                 SM64ROM.changeByte(j + 5, 0x02);
-                if (SM64ROM.getSegmentStart(0x0E) >= 0x1200000 && !B7Added) SM64ROM.changeByte(j, 0xB7);
+                if (!B7Added) SM64ROM.changeByte(j, 0xB7);
             }
             else if (SM64ROM.getByte(j) == 0xB7)
             {
                 if (SM64ROM.getByte(j + 5) == 0x02) B7Added = true; //Fog in the importer adds this at end already.
                 SM64ROM.changeByte(j + 5, 0x02);
-                if (SM64ROM.getSegmentStart(0x0E) >= 0x1200000 && !B7Added) SM64ROM.changeByte(j, 0xB6);
+                if (!B7Added) SM64ROM.changeByte(j, 0xB6);
             }
             else if (SM64ROM.getByte(j) == 0x03) SM64ROM.WriteEightBytes(j, 0xE700000000000000);
-            else if (SM64ROM.getByte(j) == 0x06) ForceVertRGBAJump(SM64ROM.readSegmentAddr(SM64ROM.ReadFourBytes(j + 4)), Opaque, translucency);
+            else if (SM64ROM.getByte(j) == 0x06) ForceVertRGBAJump(SM64ROM.readSegmentAddr(SM64ROM.ReadFourBytes(j + 4)), Opaque);
             else if (SM64ROM.getByte(j) == 0xB8)
             {
-                if (!Opaque && SM64ROM.getSegmentStart(0x0E) >= 0x1200000)
-                {
-                    uint layeroffset = GeoLayouts.ExtAlphaDLPointer + 1;
-                    if (SM64ROM.getByte(layeroffset) == 0x04 && translucency) SM64ROM.changeByte(layeroffset, 0x05); //change layer 04 to layer 05 for translucency
-                    else if(!translucency) SM64ROM.changeByte(layeroffset, 0x04); //If they said no to translucency, change it back to 04
-                    if (B7Added) return; // if B7 was already added, just get OUT (Layering switch still allowed)
-                    SM64ROM.changeByte(j, 0xB7); SM64ROM.changeByte(j + 5, 0x02);
-                    SM64ROM.changeByte(j + 8, 0xB8); for (uint k = j + 9; k < j + 16; k++) { SM64ROM.changeByte(k, 0x00); }
-                }
                 if (B7Added) return; // if B7 was already added, just get OUT (Catch for opaque models)
-                if (Opaque && SM64ROM.getSegmentStart(0x0E) >= 0x1200000)
-                {
-                    SM64ROM.changeByte(j, 0xB7); SM64ROM.changeByte(j + 5, 0x02);
-                    uint EndAddr = LevelScripts.Ext0EBankEnd - 8;
-                    SM64ROM.copyBytes(j + 8, j + 16, EndAddr - (j + 8)); // Shift 8 bytes to make room for new command
-                    AddToSegAddr(GeoLayouts.ExtAlphaDLPointer + 4, 8); //Repoint alpha DL from movement
-                    AddToSegAddr(LevelScripts.ExtCollisionPointer + 4, 8); //Repoint collision from movement
-                    SM64ROM.changeByte(j + 8, 0xB8); for (uint k = j + 9; k < j + 16; k++) { SM64ROM.changeByte(k, 0x00); }
-                }
+                uint EndAddr = 0;
+                uint start = GeoLayouts.AlphaModels[GeoLayouts.AlphaModels.Length - 1];
+                if (GeoLayouts.AlphaModels.Length > 0) for (uint i = start; i < SM64ROM.getEndROMAddr(); i += 8) //Find last alpha DL in bank
+                    { if (SM64ROM.getByte(i) == 0xB8) { EndAddr = i + 8; break; } }
+                else for (uint i = SM64ROM.readSegmentAddr(SM64ROM.ReadFourBytes(LevelScripts.ExtCollisionPointer + 4)); i < SM64ROM.getEndROMAddr(); i+=4) //If no alpha use collision end
+                    { if (SM64ROM.ReadFourBytes(i) == 0x00410042) { EndAddr = i + 8; break; } }
+                if (EndAddr == 0) throw new Exception("Unstable Memory Shift!");
+                uint SegEndAddr = EndAddr - SM64ROM.getSegmentStart(0x0e);
+                SM64ROM.WriteEightBytes(EndAddr, 0xBB000000FFFFFFFF);
+                SM64ROM.WriteEightBytes(EndAddr+8, 0xB700000000020000);
+                SM64ROM.WriteEightBytes(EndAddr+16, 0xB800000000000000);
+                SM64ROM.WriteEightBytes(j - 8, (ulong)(0x060000000E000000 + SegEndAddr));
                 return;
-            } 
+            }
         }
     }
 
+
+    private static void AddToSegAddr(uint addr, uint addamount)
+    {
+        UInt32 SegAddr = SM64ROM.ReadFourBytes(addr);
+        SegAddr += addamount;
+        SM64ROM.WriteFourBytes(addr, SegAddr);
+    }
+
+    public static void InitialiseModelLoad(Rectangle ClientRectangle, GLControl RenderPanel, int Width = 0, int Height = 0)
+    {
+        Textures.currentTexAddr = 0;
+        Textures.TextureArray = new int[0];
+        Textures.TextureAddrArray = new uint[0][];
+        Textures.F5CMDArray = new uint[0][];
+        Vertex.CurrentVertexList = new UInt32[0];
+        GeoLayouts.OpaqueModels = new uint[0];
+        GeoLayouts.AlphaModels = new uint[0];
+        Textures.FirstTexLoad = true;
+        Textures.S_Scale = 1f;
+        Textures.T_Scale = 1f;
+        if (Width == 0 || Height == 0) return;
+        Renderer.Render(ClientRectangle, Width, Height, RenderPanel);
+    }
+
+    public static void OverrideEnvColour(byte R, byte G, byte B, byte A)
+    {
+        for (int i = 0; i < GeoLayouts.AlphaModels.Length; i++)
+        {
+            uint addr = GeoLayouts.AlphaModels[i];
+            for (uint j = addr; j < SM64ROM.getEndROMAddr(); j+=8)
+            {
+                if (SM64ROM.getByte(j) == 0xFB) SM64ROM.WriteFourBytes(j + 4, (UInt32)((R << 24) | (G << 16) | (B << 8) | A));
+                if (SM64ROM.getByte(j) == 0xB8) return;
+            }
+        }
+    }
+
+    public static bool LevelHasLighting()
+    {
+        for (int i = 0; i < GeoLayouts.AlphaModels.Length; i++)
+        {
+            uint addr = GeoLayouts.AlphaModels[i];
+            for (uint j = addr; j < SM64ROM.getEndROMAddr(); j += 8)
+            {
+                if (SM64ROM.getByte(j) == 0xB6 && SM64ROM.getByte(j + 5) == 0x02) return false;
+                if (SM64ROM.getByte(j) == 0xB8) break;
+            }
+        }
+        for (int i = 0; i < GeoLayouts.OpaqueModels.Length; i++)
+        {
+            uint addr = GeoLayouts.OpaqueModels[i];
+            for (uint j = addr; j < SM64ROM.getEndROMAddr(); j += 8)
+            {
+                if (SM64ROM.getByte(j) == 0xB6 && SM64ROM.getByte(j + 5) == 0x02) return false;
+                if (SM64ROM.getByte(j) == 0xB8) break;
+            }
+        }
+        return true;
+    }
+    
+    /*public static void ForceVertNorms(bool Opaque)
+    {
+        uint[] addresses;
+        if (Opaque) addresses = GeoLayouts.OpaqueModels;
+        else addresses = GeoLayouts.AlphaModels;
+        for (int i = 0; i < addresses.Length; i++)
+        {
+            ForceVertNormsJump(addresses[i]);
+        }
+    }
     private static void ForceVertNormsJump(uint addr)
     {
         for (uint j = addr; j < SM64ROM.getEndROMAddr(); j += 8)
@@ -122,25 +180,5 @@ public class ROMManager
             else if (SM64ROM.getByte(j) == 0x06) ForceVertNormsJump(SM64ROM.readSegmentAddr(SM64ROM.ReadFourBytes(j + 4)));
             else if (SM64ROM.getByte(j) == 0xB8) return;
         }
-    }
-
-    private static void AddToSegAddr(uint addr, uint addamount)
-    {
-        UInt32 SegAddr = SM64ROM.ReadFourBytes(addr);
-        SegAddr += addamount;
-        SM64ROM.WriteFourBytes(addr, SegAddr);
-    }
-
-    public static void InitialiseModelLoad()
-    {
-        Textures.currentTexAddr = 0;
-        Textures.TextureArray = new int[0];
-        Textures.TextureAddrArray = new uint[0][];
-        Vertex.CurrentVertexList = new UInt32[0];
-        GeoLayouts.OpaqueModels = new uint[0];
-        GeoLayouts.AlphaModels = new uint[0];
-        Textures.FirstTexLoad = true;
-        Textures.S_Scale = 1f;
-        Textures.T_Scale = 1f;
-    }
+    }*/
 }

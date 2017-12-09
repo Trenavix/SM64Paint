@@ -332,15 +332,6 @@ public class F3D
         EnvMapping = false;
     }
 
-    public static UInt32 readSegmentAddr(byte[] cmd)
-    {
-        UInt32 value = 0;
-        for (int i = 5; i < 8; i++)
-        {
-            value = (value << 8) | cmd[i];
-        }
-        return value;
-    }
     public static UInt32 returnSegmentAddr(byte[] cmd)
     {
         UInt32 value = 0;
@@ -380,6 +371,7 @@ public class F3D
 
         if (TextureIndex == 0xFFFF) //no match found
         {
+            if (!Textures.FirstTexLoad) { TextureIndex = 0; return; }
             Array.Resize(ref Textures.TextureAddrArray, Textures.TextureAddrArray.Length + 1); //insert new slot for new texture
             TextureIndex = (uint)Textures.TextureAddrArray.Length - 1; //Set index to last slot
             Textures.TextureAddrArray[TextureIndex] = new uint[8]; //new addr, format, & bitsize

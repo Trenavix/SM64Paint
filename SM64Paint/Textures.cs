@@ -19,6 +19,7 @@ using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
 using System.Collections.Generic;
+using System.Windows.Forms;
 
 public class Textures
 {
@@ -54,14 +55,19 @@ public class Textures
         if (MODE == CIMODE) { NewTexture = LoadCITexture(SM64ROM); }
         else if (MODE == RGBAMODE && BitSize == 16) { NewTexture = LoadRGBA16Texture(SM64ROM); }
         else if (MODE == RGBAMODE && BitSize == 32) { NewTexture = LoadRGBA32Texture(SM64ROM); }
+        else if (MODE == IAMODE && BitSize == 4) { NewTexture = LoadIA4Texture(SM64ROM); }
         else if (MODE == IAMODE && BitSize == 8) { NewTexture = LoadIA8Texture(SM64ROM); }
         else if (MODE == IAMODE && BitSize == 16) { NewTexture = LoadIA16Texture(SM64ROM); }
+        else if (MODE == IMODE && BitSize == 4) { NewTexture = LoadI4Texture(SM64ROM); }
+        else if (MODE == IMODE && BitSize == 8) { NewTexture = LoadI8Texture(SM64ROM); }
+        else if (MODE == YUVMODE && BitSize == 16) { NewTexture = LoadRGBA16Texture(SM64ROM); } //TODO
         else throw new System.TypeLoadException("Unimplemented Texture Format");
         return NewTexture;
     }
 
     public static int LoadCITexture(ROM SM64ROM)
     {
+        if (currentPalette.Length == 0) return 0; //If no palette, return blank texture
         int id = GL.GenTexture();
         GL.BindTexture(TextureTarget.Texture2D, id);
         byte[] CITex;
@@ -141,6 +147,39 @@ public class Textures
         return id;
     }
 
+    public static int LoadIA4Texture(ROM SM64ROM) // TODO: USE 4 BITS PER CHANNEL.
+    {
+        int id = GL.GenTexture();
+        GL.BindTexture(TextureTarget.Texture2D, id);
+        byte[] TexData = SM64ROM.copyBytestoArray(currentTexAddr, (Width * Height) / 2);
+        byte[] TexData2 = new byte[TexData.Length * 2];
+        for (int i = 0; i < TexData.Length; i++)
+        {
+            byte i1 = (byte)(((TexData[i] & 0xC0) >> 6) * 0xC7);
+            byte a1 = (byte)(((TexData[i] & 0x30) >> 4) * 0xC7);
+            byte i2 = (byte)(((TexData[i] & 0xC) >> 2) * 0xC7);
+            byte a2 = (byte)((TexData[i] & 0x3) * 0xC7);
+            TexData2[i * 2] = (byte)(i1 | a1);
+            TexData2[i * 2 + 1] = (byte)(i2 | a2);
+        }
+
+        GL.TexImage2D
+            (
+            TextureTarget.Texture2D,
+            0,
+            PixelInternalFormat.Alpha,
+            (int)Width,
+            (int)Height,
+            0,
+            OpenTK.Graphics.OpenGL.PixelFormat.Alpha,
+            PixelType.UnsignedByte,
+            TexData2
+            );
+        getTSFlags();
+        getSTDTextureFilters();
+        return id;
+    }
+
     public static int LoadIA8Texture(ROM SM64ROM)
     {
         int id = GL.GenTexture();
@@ -186,6 +225,57 @@ public class Textures
         getTSFlags();
         getSTDTextureFilters();
         return id; ;
+    }
+
+    public static int LoadI8Texture(ROM SM64ROM)
+    {
+        int id = GL.GenTexture();
+        GL.BindTexture(TextureTarget.Texture2D, id);
+        byte[] TexData = SM64ROM.copyBytestoArray(currentTexAddr, Width * Height);
+
+        GL.TexImage2D
+            (
+            TextureTarget.Texture2D,
+            0,
+            PixelInternalFormat.Intensity8,
+            (int)Width,
+            (int)Height,
+            0,
+            OpenTK.Graphics.OpenGL.PixelFormat.Luminance,
+            PixelType.UnsignedByte,
+            TexData
+            );
+        getTSFlags();
+        getSTDTextureFilters();
+        return id;
+    }
+
+    public static int LoadI4Texture(ROM SM64ROM)
+    {
+        int id = GL.GenTexture();
+        GL.BindTexture(TextureTarget.Texture2D, id);
+        byte[] TexData = SM64ROM.copyBytestoArray(currentTexAddr, (Width * Height)/2);
+        byte[] TexData2 = new byte[TexData.Length * 2];
+        for (int i = 0; i < TexData.Length; i++)
+        {
+            TexData2[i * 2] = (byte)((TexData[i] >> 4) * 17);
+            TexData2[i * 2+1] = (byte)((TexData[i] &0x0F) * 17);
+        }
+        GL.TexImage2D
+            (
+            TextureTarget.Texture2D,
+            0,
+            PixelInternalFormat.Intensity8,
+            (int)Width,
+            (int)Height,
+            0,
+            OpenTK.Graphics.OpenGL.PixelFormat.Luminance,
+            PixelType.UnsignedByte,
+            TexData2
+            );
+        getTSFlags();
+        getSTDTextureFilters();
+        return id;
     }
 
     public static short[] CI4ToRGB5A1(byte[] data, short[] palette)
@@ -266,26 +356,458 @@ public class Textures
     }
 
 
-    public static Bitmap RGBA16ToBitMap(uint addr, uint width, uint height, uint format, uint bitsize)
+    public static Bitmap TextureToBitMap(uint texaddr, uint width, uint height, uint format, uint bitsize)
     {
         ROM SM64ROM = ROMManager.SM64ROM;
         if (width == 0 || height == 0) return new Bitmap(1, 1);
         Bitmap texture = new Bitmap((Int32)width, (Int32)height);
         Graphics textureGraphics = Graphics.FromImage(texture);
-        int x = 0;
-        int y = 0;
-        for (uint i=0; i<width*height;i++)
+        uint pxaddr =0;
+        uint texel =0;
+        Color[] palette = new Color[0];
+        if (format == CIMODE)
         {
-            uint texel = addr+i * 2;
-            byte red = (byte)((SM64ROM.getByte(texel) >> 3)*8);
-            byte green = (byte)((((SM64ROM.getByte(texel) << 2) & 0x1F) | (SM64ROM.getByte(texel+1) >> 6))*8);
-            byte blue = (byte)(((SM64ROM.getByte(texel+1) >> 1) & 0x1F)*8);
-            byte alpha = (byte)((SM64ROM.getByte(texel+1) & 0x01)*255);
-            SolidBrush brush = new SolidBrush(Color.FromArgb(alpha, red, green, blue));
-            textureGraphics.FillRectangle(brush, x, y, 1, 1);
-            x++;
-            if (x > width) { x -= (int)width; y += 1; }
+            palette = new Color[(int)Math.Pow(2, bitsize)];
+            uint paletteaddr = texaddr + (width * height * bitsize / 0x08); //halfway into texture
+            for (uint i = 0; i < palette.Length; i++)
+            {
+                palette[i] = RGBA16TexeltoColor(paletteaddr+(i*2));
+            }
+        } 
+        for (uint y = 0; y < height; y++)
+        {
+            for (uint x = 0; x < width; x++)
+            {
+                if (bitsize >= 8) pxaddr = texaddr + texel * (bitsize / 8);
+                else pxaddr = texaddr + texel;
+                SolidBrush brush = new SolidBrush(Color.HotPink);
+                if ((format == RGBAMODE && bitsize == 16) || format == YUVMODE) //Todo: YUV
+                {
+                    brush = new SolidBrush(RGBA16TexeltoColor(pxaddr));
+                }
+                else if (format == RGBAMODE && bitsize == 32) //RGBA32
+                {
+                    byte red = SM64ROM.getByte(pxaddr);
+                    byte green = SM64ROM.getByte(pxaddr + 1);
+                    byte blue = SM64ROM.getByte(pxaddr + 2);
+                    byte alpha = SM64ROM.getByte(pxaddr + 3);
+                    brush = new SolidBrush(Color.FromArgb(alpha, red, green, blue));
+                }
+                else if (format == IAMODE && bitsize == 4) //IA4
+                {
+                    byte I1 = (byte)(SM64ROM.getByte(pxaddr) & 0xC0);
+                    byte A1 = (byte)(SM64ROM.getByte(pxaddr) & 0x30);
+                    brush = new SolidBrush(Color.FromArgb(A1, I1, I1, I1));
+                    textureGraphics.FillRectangle(brush, x, y, 1, 1);
+                    x++; if (x >= width) { x = 0; y++; } //increment
+                    byte I2 = (byte)(SM64ROM.getByte(pxaddr)& 0x0C);
+                    byte A2 = (byte)(SM64ROM.getByte(pxaddr) & 3);
+                    brush = new SolidBrush(Color.FromArgb(A1, I1, I1, I1));
+                }
+                else if (format == IAMODE && bitsize == 8) //IA8
+                {
+                    byte I1 = (byte)(SM64ROM.getByte(pxaddr) >> 4);
+                    byte A1 = (byte)(SM64ROM.getByte(pxaddr) &0x0F);
+                    brush = new SolidBrush(Color.FromArgb(A1, I1, I1, I1));
+                }
+                else if (format == IAMODE && bitsize == 16) //IA16
+                {
+                    byte I = SM64ROM.getByte(pxaddr);
+                    byte A = SM64ROM.getByte(pxaddr + 1);
+                    brush = new SolidBrush(Color.FromArgb(A, I, I, I));
+                }
+                else if (format == IMODE && bitsize == 8) //I8
+                {
+                    byte I = SM64ROM.getByte(pxaddr);
+                    brush = new SolidBrush(Color.FromArgb((byte)255, I, I, I));
+                }
+                else if (format == IMODE && bitsize == 4) //I4
+                {
+                    byte I1 = (byte)((SM64ROM.getByte(pxaddr) >> 4) * 17); //*17 for >>4 with 0x0F range
+                    brush = new SolidBrush(Color.FromArgb((byte)255, I1, I1, I1));
+                    textureGraphics.FillRectangle(brush, x, y, 1, 1);
+                    x++; if (x >= width) { x = 0; y++; } //increment
+                    byte I2 = (byte)((SM64ROM.getByte(pxaddr) & 0x0F) * 17); //*17 for >>4 with 0x0F range
+                    brush = new SolidBrush(Color.FromArgb((byte)255, I2, I2, I2));
+                }
+                else if (format == CIMODE && bitsize == 4) //CI4
+                {
+                    int px1 = SM64ROM.getByte(pxaddr) >> 4;
+                    brush = new SolidBrush(palette[px1]);
+                    textureGraphics.FillRectangle(brush, x, y, 1, 1);
+                    x++; if (x >= width) { x = 0; y++; } //increment
+                    int px2 = SM64ROM.getByte(pxaddr) &0x0F;
+                    brush = new SolidBrush(palette[px2]);
+                }
+                textureGraphics.FillRectangle(brush, x, y, 1, 1);
+                texel++;
+            }
+            
         }
         return texture;
+    }
+    public static Color RGBA16TexeltoColor(uint pxaddr)
+    {
+        ROM SM64ROM = ROMManager.SM64ROM;
+        byte red = (byte)Math.Round((SM64ROM.getByte(pxaddr) >> 3) * 8.225);
+        byte green = (byte)Math.Round((((SM64ROM.getByte(pxaddr) << 2) & 0x1F) | (SM64ROM.getByte(pxaddr + 1) >> 6)) * 8.225);
+        byte blue = (byte)Math.Round(((SM64ROM.getByte(pxaddr + 1) >> 1) & 0x1F) * 8.225);
+        byte alpha = (byte)((SM64ROM.getByte(pxaddr + 1) & 0x01) * 255);
+        return Color.FromArgb(alpha, red, green, blue);
+    }
+
+    public static void ImportBMPtoTexture(Bitmap bmp, int index)
+    {
+        ROM SM64ROM = ROMManager.SM64ROM;
+        bool RGBAMode = TextureAddrArray[index][1] == RGBAMODE;
+        bool IAMode = TextureAddrArray[index][1] == IAMODE;
+        bool IMode = TextureAddrArray[index][1] == IMODE;
+        bool CIMode = TextureAddrArray[index][1] == CIMODE;
+        bool YUVMode = TextureAddrArray[index][1] == YUVMODE;
+        uint bitsize = TextureAddrArray[index][2];
+        UInt32 addr = TextureAddrArray[index][0];
+        UInt32[] inttexels = new UInt32[bmp.Width*bmp.Height];
+        ushort[] shorttexels = new ushort[bmp.Width * bmp.Height];
+        byte[] bytetexels;
+        int x = 0;
+        int y = 0;
+        switch(bitsize)
+        {
+            case 16:
+                if (RGBAMode) //RGBA16
+                {
+                    for (uint i = 0; i < shorttexels.Length; i++)
+                    {
+                        System.Drawing.Color texel = bmp.GetPixel(x, y);
+                        byte alpha = texel.A;
+                        if (alpha > 0) alpha = 1; else alpha = 0;
+                        ushort colour = (ushort)
+                            (
+                            ((byte)(texel.R >> 3) << 11) |
+                            ((byte)(texel.G >> 3) << 6) |
+                            ((byte)(texel.B >> 3) << 1) |
+                            ((byte)(alpha))
+                            );
+                        shorttexels[i] = colour;
+                        x++; if (x >= bmp.Width) { x = 0; y++; }
+                    }
+                    for (uint i = 0; i < shorttexels.Length; i++)
+                    {
+                        SM64ROM.WriteTwoBytes(addr + i * 2, shorttexels[i]);
+                    }
+                }
+                else if (IAMode) //IA16
+                {
+                    for (uint i = 0; i < shorttexels.Length; i++)
+                    {
+                        System.Drawing.Color texel = bmp.GetPixel(x, y);
+                        ushort intensity = (ushort)((((texel.R + texel.G + texel.B) / 3) << 8) | texel.A);
+                        shorttexels[i] = intensity;
+                        x++; if (x >= bmp.Width) { x = 0; y++; }
+                    }
+                    for (uint i = 0; i < shorttexels.Length; i++)
+                    {
+                        SM64ROM.WriteTwoBytes(addr + i * 2, shorttexels[i]);
+                    }
+                }
+                return;
+            case 32: //RGBA32
+                    for (uint i = 0; i < inttexels.Length; i++)
+                    {
+                        System.Drawing.Color texel = bmp.GetPixel(x, y);
+                        UInt32 colour = (UInt32)((texel.R << 24) | (texel.G << 16) | (texel.B << 8) | texel.A);
+                        inttexels[i] = colour;
+                        x++; if (x >= bmp.Width) { x = 0; y++; }
+                    }
+                    for (uint i = 0; i < inttexels.Length; i++)
+                    {
+                        SM64ROM.WriteFourBytes(addr + i * 4, inttexels[i]);
+                    }
+                return;
+            case 8:
+                    bytetexels = new byte[bmp.Width * bmp.Height];
+                    if (IMode) //I8
+                    {
+                        for (uint i = 0; i < bytetexels.Length; i++)
+                        {
+                            System.Drawing.Color texel = bmp.GetPixel(x, y);
+                            byte intensity = (byte)((texel.R + texel.G + texel.B) / 3);
+                            bytetexels[i] = intensity;
+                            x++; if (x >= bmp.Width) { x = 0; y++; }
+                        }
+                        for (uint i = 0; i < bytetexels.Length; i++)
+                        {
+                            SM64ROM.changeByte(addr + i, bytetexels[i]);
+                        }
+                    }
+                    else if (IAMode) //IA8
+                    {
+                        for (uint i = 0; i < bytetexels.Length; i++)
+                        {
+                            System.Drawing.Color texel = bmp.GetPixel(x, y);
+                            byte intensity = (byte)((byte)((texel.R + texel.G + texel.B) / 3) & 0xF0);
+                            byte alpha = (byte)((texel.A & 0xF0) >> 4);
+                            byte IA = (byte)(intensity | alpha);
+                            bytetexels[i] = IA;
+                            x++; if (x >= bmp.Width) { x = 0; y++; }
+                        }
+                        for (uint i = 0; i < bytetexels.Length; i++)
+                        {
+                            SM64ROM.changeByte(addr + i, bytetexels[i]);
+                        }
+                    }
+                return;
+            case 4:
+                bytetexels = new byte[(bmp.Width * bmp.Height) / 2];
+                if (IMode) //I4
+                {
+                    for (uint i = 0; i < bytetexels.Length; i++)
+                    {
+                        System.Drawing.Color texel = bmp.GetPixel(x, y);
+                        byte intensity1 = (byte)((byte)((texel.R + texel.G + texel.B) / 3) & 0xF0);
+                        x++; if (x >= bmp.Width) { x = 0; y++; }
+                        System.Drawing.Color texel2 = bmp.GetPixel(x, y);
+                        byte intensity2 = (byte)(((byte)((texel2.R + texel2.G + texel2.B) / 3) & 0xF0) >> 4);
+                        byte ii = (byte)(intensity1 | intensity2);
+                        bytetexels[i] = ii;
+                        x++; if (x >= bmp.Width) { x = 0; y++; }
+                    }
+                    for (uint i = 0; i < bytetexels.Length; i++)
+                    {
+                       SM64ROM.changeByte(addr + i, bytetexels[i]);
+                    }
+                }
+                else if (IAMode) //IA4
+                {
+                    for (uint i = 0; i < bytetexels.Length; i++)
+                    {
+                        System.Drawing.Color texel = bmp.GetPixel(x, y);
+                        byte intensity1 = (byte)((byte)(((texel.R + texel.G + texel.B) / 3) >> 6) << 6);
+                        byte alpha1 = (byte)(((texel.A) >> 6) << 4);
+                        byte ia1 = (byte)(intensity1 | alpha1);
+                        x++; if (x >= bmp.Width) { x = 0; y++; }
+                        System.Drawing.Color texel2 = bmp.GetPixel(x, y);
+                        byte intensity2 = (byte)((byte)(((texel2.R + texel2.G + texel2.B) / 3) >> 6) << 2);
+                        byte alpha2 = (byte)((texel2.A) >>6);
+                        byte ia2 = (byte)(intensity2 | alpha2);
+                        byte iaia = (byte)(ia1 | ia2);
+                        bytetexels[i] = iaia;
+                        x++; if (x >= bmp.Width) { x = 0; y++; }
+                    }
+                    for (uint i = 0; i < bytetexels.Length; i++)
+                    {
+                        SM64ROM.changeByte(addr + i, bytetexels[i]);
+                    }
+               }
+               else if (CIMode) //CI4
+               {
+                    if (bmp.Width * bmp.Height > 0x1000) {MessageBox.Show("CI4 cannot be above 64x64 due to\nTMEM limitations with palettes.", "Texture too large"); return; }
+                    Color[] colours = getImageColors(bmp);
+                    UInt32 paletteaddr = (UInt32)(addr + (bmp.Width * bmp.Height/2)); //Put palette right after CI data
+                    for (int i=0; i<colours.Length;i++)
+                    {
+                        byte alpha = colours[i].A;
+                        if (alpha > 0) alpha = 1; else alpha = 0;
+                        ushort colour = (ushort)
+                            (
+                            ((byte)(colours[i].R >> 3) << 11) |
+                            ((byte)(colours[i].G >> 3) << 6) |
+                            ((byte)(colours[i].B >> 3) << 1) |
+                            ((byte)(alpha))
+                            );
+                        SM64ROM.WriteTwoBytes((UInt32)(paletteaddr+(i*2)), colour);
+                    }
+                    byte[] CIData = getCIData(bmp, colours);
+                    for (uint i = 0; i < CIData.Length; i++)
+                    { SM64ROM.changeByte(i + addr, CIData[i]); } //Write CI data over texture taking up **half** memory compared to RGBA16
+                    UInt32 branchDLAddr = (UInt32)(paletteaddr + 0x20); //palette size is 0x20 for ci4
+                    UInt32 branchDLSegAddr = 0x0E000000 | (branchDLAddr - SM64ROM.getSegmentStart(0x0E));
+                    UInt32[] F5CMDs = Textures.F5CMDArray[index];
+                    ushort linesperword = Convert.ToUInt16( (64d*2048d)/ ((double)bmp.Width * bitsize));
+                    for (uint i = 0; i < F5CMDs.Length; i++)
+                    {
+                        SM64ROM.changeByte(F5CMDs[i] + 1, 0x40); //CI4 format
+                        bool firsttexture = (i == 0 && SM64ROM.getByte(F5CMDs[0] + 0x10) == 0xFD);
+                        for (uint j = F5CMDs[i]; j > F5CMDs[i] - 0x30; j -= 8) // Update 0xFD
+                        {
+                            if (SM64ROM.getByte(j) == 0xF3) SM64ROM.WriteEightBytes(j, 0xF3000000073FF000 | linesperword);
+                            else if (SM64ROM.getByte(j) == 0xFD || firsttexture) //includes first texture check
+                            {
+                                if (firsttexture) j += 0x10; 
+                                SM64ROM.changeByte(j + 1, 0x50); //Format and bitsize byte, 0x50 for CI4
+                                SM64ROM.copyBytes(j, branchDLAddr + 0x28, 8);
+                                SM64ROM.WriteTwoBytes(j, 0x0600); //Branch to load routine
+                                SM64ROM.WriteFourBytes(j + 4, branchDLSegAddr);
+                                if (SM64ROM.getByte(j + 0x10) == 0x06) SM64ROM.WriteEightBytes(j + 0x10, 0xE600000000000000); //Revert the TMEM shift undo (This tex still needs TMEM shift)
+                                break;
+                            }
+                        }
+                    }
+                    for (uint i = 0; i < F5CMDs.Length; i++)
+                    {
+                        bool firsttexture = (i == 0 && SM64ROM.getByte(F5CMDs[0] + 0x10) == 0xFD);
+                        for (uint j = F5CMDs[i]; j < SM64ROM.getEndROMAddr(); j += 8) 
+                        {
+                            if (firsttexture && SM64ROM.getByte(j + 0x20) == 0xF3) { j += 0x20; SM64ROM.WriteEightBytes(j + 0x20, 0xF3000000073FF000 | linesperword); } //Update first texture command
+                            if (SM64ROM.getByte(j) == 0x06) break; //If next texture is CI then don't revert the tmem shift
+                            else if (SM64ROM.getByte(j) == 0xE6)
+                            {
+                                if (SM64ROM.getByte(j - 0x10) == 0x06) break; //If there is already a CI jump, escape from reverting it
+                                SM64ROM.changeByte(j, 0x06);
+                                SM64ROM.WriteFourBytes(j + 4, branchDLSegAddr + 56);
+                                break;
+                            }
+                            else if (SM64ROM.getByte(j) == 0xB8)
+                            {
+                                for (uint k = j; k > j - 0x30; k-=8)
+                                {
+                                    if (SM64ROM.getByte(k) == 0xBB) { SM64ROM.changeByte(k, 0x06); SM64ROM.WriteFourBytes(k + 4, branchDLSegAddr + 80);
+                                        /*throw new Exception(branchDLSegAddr.ToString("x")+"\n"+branchDLAddr.ToString("x")+"\n");*/ break; }
+                                }
+                                break; //allow last texture to jump and revert TMEM shift
+                            } 
+                        }
+                    }
+                    SM64ROM.WriteEightBytes(branchDLAddr, 0xE700000000000000); // Loadsync
+                    SM64ROM.WriteEightBytes(branchDLAddr+8, 0xFD10000000000000 | (branchDLSegAddr - 0x20)); //load palette
+                    SM64ROM.WriteEightBytes(branchDLAddr+16, 0xF500010001000000); //Settile (palette)
+                    SM64ROM.WriteEightBytes(branchDLAddr+24, 0xF00000000103C000); //Load palette into TMEM
+                    SM64ROM.WriteEightBytes(branchDLAddr+32, 0xBA000E0200008000); //shift TMEM to palette
+                    SM64ROM.WriteEightBytes(branchDLAddr + 48, 0xB800000000000000); //Break out of jump
+                    SM64ROM.WriteEightBytes(branchDLAddr + 56, 0xE600000000000000); //Loadsync for next texture
+                    SM64ROM.WriteEightBytes(branchDLAddr + 64, 0xBA000E0200000000); //shift TMEM back
+                    SM64ROM.WriteEightBytes(branchDLAddr + 72, 0xB800000000000000); //Break from jump
+                    SM64ROM.WriteEightBytes(branchDLAddr + 80, 0xBB000000FFFFFFFF); //Disable tex at end of DL
+                    SM64ROM.WriteEightBytes(branchDLAddr + 88, 0xBA000E0200000000); //shift TMEM back
+                    SM64ROM.WriteEightBytes(branchDLAddr + 96, 0xB800000000000000); //Break out of jump
+                }
+                return;
+        }
+        
+    }
+    public static void ResizeTexture(int F5index, int widthpower, int heightpower)
+    {
+        uint[] F5CMDs = Textures.F5CMDArray[F5index]; ROM SM64ROM = ROMManager.SM64ROM;
+        byte WidthsizeByte = SM64ROM.getByte(F5CMDs[0] + 7);
+        ushort HeightsizeShort = SM64ROM.ReadTwoBytes(F5CMDs[0] + 5);
+        int ogHeightPower = (HeightsizeShort >> 6 & 0x0F);
+        int ogWidthPower = (WidthsizeByte >> 4);
+        int difx = widthpower - ogWidthPower;
+        int dify = heightpower - ogHeightPower;
+        int width = (int)Math.Pow(2, widthpower);
+        int height = (int)Math.Pow(2, heightpower);
+        UInt32 clamp = (UInt32)((((width - 1) << 2) << 12) | ((height - 1) << 2));
+        for (uint i = 0; i < F5CMDs.Length; i++)
+        {
+            //SM64ROM.changeByte(F5CMDs[i] + 2, (byte)(width / 2)); //Scan width for 16bpp
+            SM64ROM.changeByte(F5CMDs[i] + 7, (byte)(WidthsizeByte + (difx * 16)));//*8 for << 4 with negative carried
+            SM64ROM.WriteTwoBytes(F5CMDs[i] + 5, (ushort)(HeightsizeShort + (dify * 64)));//*8 for << 6 with negative carried
+            SM64ROM.WriteFourBytes(F5CMDs[i] + 12, clamp); //F2 command follows F5 rendertile
+            bool exitUVcorrection = false;
+            for (uint j = F5CMDs[i]+8; j < SM64ROM.getEndROMAddr(); j+=8) //UV automatic correction
+            {
+                if (exitUVcorrection) break;
+                switch (SM64ROM.getByte(j))
+                {
+                    case 0xBF:
+                        UInt32 UVStart =0;
+                        double[][] UVs = new double[2][]; for (int k = 0; k < 2; k++) { UVs[k] = new double[3]; }
+                        for (uint k = j; k > j - 0x800; k-=8)
+                        {
+                            if (SM64ROM.getByte(k) == 0x04)
+                            {
+                                UVStart = SM64ROM.readSegmentAddr(SM64ROM.ReadFourBytes(k + 4)) + 8; break;
+                            }
+                        }
+                        for (uint k = 5; k < 8; k ++)
+                        {
+                            UInt32 addr = Vertex.getAddrFromTriIndex(UVStart, SM64ROM.getByte(j+k));
+                            double U = (short)SM64ROM.ReadTwoBytes(addr);
+                            double V = (short)SM64ROM.ReadTwoBytes(addr+2);
+                            U *= Math.Pow(2, difx);
+                            V *= Math.Pow(2, dify);
+                            UVs[0][k - 5] = U;
+                            UVs[1][k - 5] = V;
+                        }
+                        UVs = Vertex.UVChecker(UVs);
+                        for (uint k = 5; k < 8; k++)
+                        {
+                            double value;
+                            UInt32 addr = Vertex.getAddrFromTriIndex(UVStart, SM64ROM.getByte(j+k));
+                            if (UVs[0][k - 5] > 0x7fff || UVs[0][k - 5] < -0x8000) { value = UVs[0][k - 5]; throw new Exception(); }
+                            SM64ROM.WriteTwoBytes(addr, (ushort)Convert.ToInt16(UVs[0][k-5]));
+                            SM64ROM.WriteTwoBytes(addr + 2, (ushort)Convert.ToInt16(UVs[1][k-5]));
+                        }
+                        break;
+                    case 0xFD:
+                        exitUVcorrection = true;
+                        break;
+                    case 0x06:
+                        exitUVcorrection = true;
+                        break;
+                    case 0xB8:
+                        exitUVcorrection = true;
+                        break;
+                }
+            }
+            //throw new Exception("imgaey");
+        }
+    }
+
+    public static Vector2 getWidthHeightPowers(int F5Index)
+    {
+        uint[] F5CMD = Textures.F5CMDArray[F5Index]; ROM SM64ROM = ROMManager.SM64ROM;
+        byte WidthsizeByte = SM64ROM.getByte(F5CMD[0] + 7);
+        ushort HeightsizeShort = SM64ROM.ReadTwoBytes(F5CMD[0] + 5);
+        int ogHeightPower = (HeightsizeShort >> 6 & 0x0F);
+        int ogWidthPower = (WidthsizeByte >> 4);
+        return new Vector2(ogWidthPower, ogHeightPower);
+    }
+
+    public static Color[] getImageColors(Bitmap bmp)
+    {
+        Color[] colours = new Color[0];
+        for (int y = 0; y < bmp.Height; y++)
+        {
+            for (int x = 0; x < bmp.Width; x++)
+            {
+                bool newcolour = true;
+                System.Drawing.Color texel = bmp.GetPixel(x, y);
+                for (int z = 0; z < colours.Length; z++)
+                {
+                    if (colours[z].Equals(texel)) { newcolour = false; break; }
+                }
+                if (newcolour || colours.Length == 0)
+                {
+                    Array.Resize(ref colours, colours.Length + 1);
+                    colours[colours.Length - 1] = texel;
+                } 
+            }
+        }
+        return colours;
+    }
+    public static byte[] getCIData(Bitmap bmp, Color[] colours)
+    {
+        byte[] CIData = new byte[bmp.Width * bmp.Height/2]; //CI4
+        if (colours.Length > 16) Array.Resize(ref CIData, CIData.Length * 2); //if CI8, resize twice length
+        int byteidx =0;
+        for (int y = 0; y < bmp.Height; y++)
+        {
+            for (int x = 0; x < bmp.Width; x++)
+            {
+                System.Drawing.Color texel = bmp.GetPixel(x, y);
+                for (int z = 0; z < colours.Length; z++)
+                {
+                    if (colours[z].Equals(texel))
+                    {
+                        if (x % 2 == 0) CIData[byteidx] = (byte)(z << 4); //If even, shift to left nybble
+                        else CIData[byteidx] |= (byte)z; //if odd..
+                        break;
+                    }
+                }
+                if (x % 2 != 0) byteidx++;
+            }
+        }
+        return CIData;
     }
 }

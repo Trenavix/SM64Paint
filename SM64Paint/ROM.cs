@@ -83,9 +83,9 @@ public class ROM
     public void WriteEightBytes(uint offset, UInt64 bytes)
     {
         byte[] currentbyte = BitConverter.GetBytes(bytes);
-        for (uint i = offset; i < offset + 8; i++)
+        for (uint i = offset; i > offset - 8; i--)
         {
-            CurrentROM[i] = currentbyte[i-offset];
+            CurrentROM[i+7] = currentbyte[offset-i];
         }
     }
     public byte getByte(uint offset)
