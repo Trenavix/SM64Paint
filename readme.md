@@ -4,13 +4,14 @@ This program is in an early beta stage and can currently:
 * Attempt to force a geometry mode change from vector normal lighting to vertex RGBA shading and vice cersa
 * Colour vertices from a palette selection
 * Save ROM with all edited vertices
+* Allow texture editing such as clamping and mirroring
+* Allow RGBA16, RGBA32, CI4, IA4, IA8, IA16, I4, and I8 texture importing
 
 Upcoming plans:
 * Properly render environment mapping
-* Allow texture editing such as clamping and mirroring
-* Show a table of previous vertex colours underneathe palette
-* (Maybe) Allow CI4/CI8 texture importing
-* Hide geometry that is not using vertex RGBA shading
+* Optimise renderer and improve GUI
+* CI8 and YUV16 texture importing 
+* Properly render light vectors in proportion to camera view
 
 Renderer Screenshots:
 
