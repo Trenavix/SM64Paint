@@ -1,7 +1,7 @@
 # SM64Paint
 This program is in an early beta stage and can currently:
 * Preview all levels within any uncompressed SM64 ROM (including mods)
-* Attempt to force a geometry mode change from vector normal lighting to vertex RGBA shading and vice cersa
+* Attempt to force a geometry mode change from vector normal lighting to vertex RGBA shading and vice versa
 * Colour vertices from a palette selection
 * Save ROM with all edited vertices
 * Allow texture editing such as clamping and mirroring
