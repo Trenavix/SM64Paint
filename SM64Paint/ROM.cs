@@ -112,6 +112,20 @@ public class ROM
             changeByte(destAddr+i, tempbuffer[i]);
         }
     }
+    public void cutBytes(uint srcAddr, uint destAddr, uint size)
+    {
+        byte[] tempbuffer = new byte[size];
+        for (uint i = 0; i < size; i++)
+        {
+            tempbuffer[i] = CurrentROM[srcAddr + i];
+        }
+        copyBytes(srcAddr, srcAddr - size, getEndROMAddr() - srcAddr); //Copybytes backward to "cut"
+        copyBytes(destAddr, destAddr + size, getEndROMAddr() - size - destAddr);
+        for (uint i = 0; i < size; i++)
+        {
+            changeByte(destAddr + i, tempbuffer[i]);
+        }
+    }
     public byte[] copyBytestoArray(uint srcAddr, uint size)
     {
         byte[] newarray = new byte[size];

@@ -28,6 +28,7 @@ public class GeoLayouts
 
     public static void ParseGeoLayout(ROM SM64ROM, uint offset, bool ColourBuffer)
     {
+        if (SM64ROM == null) return;
         if (Textures.FirstTexLoad)
         {
             ExtDLPointers = new uint[7][];
@@ -120,7 +121,7 @@ public class GeoLayouts
                     if (drawlayer > 4 && !GeoLayouts.OpaqueRendered) break;
                     if (drawlayer <= 4 && GeoLayouts.OpaqueRendered) break;
                     segaddr = SM64ROM.ReadFourBytes(i + 4);
-                    DecideBufferAndAddr(SM64ROM.getByte(i + 1), segaddr, ColourBuffer);
+                    DecideBufferAndAddr(SM64ROM.ReadEightBytes(i), segaddr, ColourBuffer);
                     F3D.ParseF3DDL(SM64ROM, segaddr, ColourBuffer);
                     if (!Textures.FirstTexLoad) break;
                     Array.Resize(ref ExtDLPointers[drawlayer], ExtDLPointers[drawlayer].Length + 1); //Increase size by one to add
@@ -180,8 +181,9 @@ public class GeoLayouts
         return value;
     }
 
-    private static void DecideBufferAndAddr(uint layer, uint segaddr, bool ColourBuffer)
+    private static void DecideBufferAndAddr(ulong CMD, uint segaddr, bool ColourBuffer)
     {
+        byte layer = (byte)((CMD >> 48) & 0xFF);
         if (layer == 2 || layer == 6) GL.DepthRange(0.00001, 0.99999f);
         else GL.DepthRange(0, 1f);
         if (ColourBuffer || F3D.RenderEdges)

@@ -53,29 +53,27 @@ public class ROMManager
 
     private static void ForceVertRGBAJump(uint addr, bool Opaque)
     {
-        bool B7Added = false;
+        uint B8Addr = addr;
         for (uint j = addr; j < SM64ROM.getEndROMAddr(); j += 8) //Check if B7 is already at end of DL
         {
             if (SM64ROM.getByte(j) == 0xB8)
             {
-                if (SM64ROM.getByte(j - 8) == 0xB7) B7Added = true;
+                if (SM64ROM.ReadEightBytes(j - 8) == 0xB700000000020000) return;
+                else B8Addr = j;
                 break;
             }
         }
         for (uint j = addr; j < SM64ROM.getEndROMAddr(); j += 8) //Stuff is changed here
         {
-            if (SM64ROM.getByte(j) == 0xB6)
+            if (SM64ROM.getByte(j) == 0x03 && SM64ROM.getByte(j+1) == 0x86)
             {
-                SM64ROM.changeByte(j + 5, 0x02);
-                if (!B7Added) SM64ROM.changeByte(j, 0xB7);
+                SM64ROM.WriteEightBytes(j, 0xB700000000020000);
+                SM64ROM.cutBytes(j, B8Addr - 8, 8);
+                SM64ROM.WriteEightBytes(j, 0xB600000000020000);
             }
-            else if (SM64ROM.getByte(j) == 0xB7)
-            {
-                if (SM64ROM.getByte(j + 5) == 0x02) B7Added = true; //Fog in the importer adds this at end already.
-                SM64ROM.changeByte(j + 5, 0x02);
-                if (!B7Added) SM64ROM.changeByte(j, 0xB6);
-            }
-            else if (SM64ROM.getByte(j) == 0x03) SM64ROM.WriteEightBytes(j, 0xE700000000000000);
+            else if (SM64ROM.getByte(j) == 0xB8) return;
+            else if (SM64ROM.getByte(j) == 0xB7 && SM64ROM.getByte(j + 5) == 0) SM64ROM.WriteEightBytes(j, 0xB700000000020000);
+            /*else if (SM64ROM.getByte(j) == 0x03) SM64ROM.WriteEightBytes(j, 0xE700000000000000);
             else if (SM64ROM.getByte(j) == 0x06) ForceVertRGBAJump(SM64ROM.readSegmentAddr(SM64ROM.ReadFourBytes(j + 4)), Opaque);
             else if (SM64ROM.getByte(j) == 0xB8)
             {
@@ -93,7 +91,7 @@ public class ROMManager
                 SM64ROM.WriteEightBytes(EndAddr+16, 0xB800000000000000);
                 SM64ROM.WriteEightBytes(j - 8, (ulong)(0x060000000E000000 + SegEndAddr));
                 return;
-            }
+            }*/
         }
     }
 
@@ -121,15 +119,22 @@ public class ROMManager
         Renderer.Render(ClientRectangle, Width, Height, RenderPanel);
     }
 
-    public static void OverrideEnvColour(byte R, byte G, byte B, byte A)
+    public static void AdjustCombiners()
     {
-        for (int i = 0; i < GeoLayouts.AlphaModels.Length; i++)
+        if (GeoLayouts.AlphaModels.Length < 1) return;
+        for (uint i = 0; i < GeoLayouts.AlphaModels.Length; i++)
         {
             uint addr = GeoLayouts.AlphaModels[i];
-            for (uint j = addr; j < SM64ROM.getEndROMAddr(); j+=8)
+            uint endaddr = 0;
+            for (uint j = addr; j < SM64ROM.getEndROMAddr(); j += 8)
             {
-                if (SM64ROM.getByte(j) == 0xFB) SM64ROM.WriteFourBytes(j + 4, (UInt32)((R << 24) | (G << 16) | (B << 8) | A));
-                if (SM64ROM.getByte(j) == 0xB8) return;
+                if (SM64ROM.getByte(j) == 0xB8) { endaddr = j + 8; break; }
+            }
+            for (uint j = addr; j < SM64ROM.getEndROMAddr(); j += 8)
+            {
+                if (SM64ROM.getByte(j) == 0xFB) SM64ROM.WriteEightBytes(j, 0xE700000000000000); //Get rid of env colour combiners
+                else if (SM64ROM.getByte(j) == 0xFC && SM64ROM.ReadEightBytes(j) == 0xFC122E24FFFFFBFD) SM64ROM.WriteEightBytes(j, 0xFC121824FF33FFFF); //Fix combiner
+                else if (SM64ROM.getByte(j) == 0xB8) break;
             }
         }
     }
@@ -141,8 +146,8 @@ public class ROMManager
             uint addr = GeoLayouts.AlphaModels[i];
             for (uint j = addr; j < SM64ROM.getEndROMAddr(); j += 8)
             {
-                if (SM64ROM.getByte(j) == 0xB6 && SM64ROM.getByte(j + 5) == 0x02) return false;
-                if (SM64ROM.getByte(j) == 0xB8) break;
+                if (SM64ROM.getByte(j) == 0x03) return true;
+                else if (SM64ROM.getByte(j) == 0xB8) break;
             }
         }
         for (int i = 0; i < GeoLayouts.OpaqueModels.Length; i++)
@@ -150,11 +155,11 @@ public class ROMManager
             uint addr = GeoLayouts.OpaqueModels[i];
             for (uint j = addr; j < SM64ROM.getEndROMAddr(); j += 8)
             {
-                if (SM64ROM.getByte(j) == 0xB6 && SM64ROM.getByte(j + 5) == 0x02) return false;
-                if (SM64ROM.getByte(j) == 0xB8) break;
+                if (SM64ROM.getByte(j) == 0x03) return true;
+                else if (SM64ROM.getByte(j) == 0xB8) break;
             }
         }
-        return true;
+        return false;
     }
     
     /*public static void ForceVertNorms(bool Opaque)

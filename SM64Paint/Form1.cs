@@ -242,8 +242,7 @@ namespace SM64Paint
                     break;
                 case MouseButtons.Right:
                     break;
-            }
-                    
+            }     
         }
 
         void RenderPanel_MouseWheel(object sender, System.Windows.Forms.MouseEventArgs e)
@@ -326,7 +325,8 @@ namespace SM64Paint
             else AreaComboBox.Enabled = false;
             TextureNumBox.Items.Clear();
             UpdateStatusText();
-            if (ROMManager.SM64ROM.getSegmentStart(0x0E) < 0x1200000) { TexturesGroupBox.Visible = false; groupBoxForce.Visible = ROMManager.LevelHasLighting(); return; }
+            if (ROMManager.SM64ROM.getSegmentStart(0x0E) < 0x1200000) { TexturesGroupBox.Visible = false; return; }
+            groupBoxForce.Visible = ROMManager.LevelHasLighting();
             TexturesGroupBox.Visible = true;
             for (uint i = 0; i < Textures.TextureArray.Length; i++)
             {
@@ -340,6 +340,7 @@ namespace SM64Paint
             Renderer.LevelArea = (uint)AreaComboBox.SelectedIndex;
             ROMManager.InitialiseModelLoad(ClientRectangle, RenderPanel, Width, Height);
             UpdateStatusText();
+            if(ROMManager.SM64ROM.getSegmentStart(0x0E) >= 0x1200000) ROMManager.AdjustCombiners();
         }
 
         private void ForceVertRGBAButton_Click(object sender, EventArgs e)
@@ -347,12 +348,13 @@ namespace SM64Paint
             DialogResult warningchoice = MessageBox.Show("Forcing VertRGBA should only be done on levels imported with SM64e and not modified. This is NOT safe and you" +
                 " should back up your ROM in case. Force VertRGBA?", "Warning!", MessageBoxButtons.YesNo);
             if (warningchoice == DialogResult.No) return;
+            Cursor.Current = Cursors.WaitCursor;
             if (!ForceOpaqueRGBA.Checked)
             {
                 ROMManager.ForceVertRGBA(ForceOpaqueRGBA.Checked);
-                return;
             }
-            ROMManager.ForceVertRGBA(ForceOpaqueRGBA.Checked);
+            else ROMManager.ForceVertRGBA(ForceOpaqueRGBA.Checked);
+            Cursor.Current = Cursors.Default;
         }
 
         private void ToggleFullscreen()
@@ -397,7 +399,6 @@ namespace SM64Paint
             {
                 ROMManager.SetVertRGBA(Vertex.CurrentVertexList[i], colour);
             }
-            ROMManager.OverrideEnvColour(R, G, B, A);
         }
 
         private void EdgesOption_Click(object sender, EventArgs e)
@@ -550,7 +551,8 @@ namespace SM64Paint
             ROMManager.InitialiseModelLoad(ClientRectangle, RenderPanel, Width, Height);
         }
 
-        private bool WaitToRender = false;
+        private static bool WaitToRender = false;
+
         private void TexFormatBox_SelectedIndexChanged(object sender, EventArgs e)
         {
             WaitToRender = true;
@@ -586,7 +588,8 @@ namespace SM64Paint
             ushort HeightsizeShort = SM64ROM.ReadTwoBytes(F5CMD[0] + 5);
             int ogHeightPower = (HeightsizeShort >> 6 & 0x0F);
             int ogWidthPower = (WidthsizeByte >> 4);
-            Textures.ResizeTexture(TextureNumBox.SelectedIndex, ogWidthPower - dif, ogHeightPower);
+            if(ogWidthPower < ogHeightPower) Textures.ResizeTexture(TextureNumBox.SelectedIndex, ogWidthPower - dif, ogHeightPower);
+            else Textures.ResizeTexture(TextureNumBox.SelectedIndex, ogWidthPower, ogHeightPower-dif);
             if (!WaitToRender)ROMManager.InitialiseModelLoad(ClientRectangle, RenderPanel, Width, Height);
             if (!WaitToRender) UpdateTextureNum();
         }
@@ -639,9 +642,13 @@ namespace SM64Paint
                 UpdateTextureNum();
                 int width = TextureBMP.Width;
                 int selectedbitsize = (int)(4*Math.Pow(2, BitsizeBox.SelectedIndex));
+                ushort linesperword = Convert.ToUInt16((64d * 2048d) / ((double)TextureBMP.Width * selectedbitsize));
+                ushort texelcount = (ushort)((double)(TextureBMP.Width * TextureBMP.Height) * ((double)selectedbitsize / 16d) - 1);
                 for (uint i = 0; i < F5CMDs.Length; i++) //Update F5 scanline width 
                 {
-                    SM64ROM.WriteTwoBytes(F5CMDs[i] + 1, (ushort)((SM64ROM.ReadTwoBytes(F5CMDs[i] + 1) & 0xFC00) | ((width * selectedbitsize / 64) << 1)));
+                    uint F5 = F5CMDs[i];
+                    if (SM64ROM.getByte(F5 - 0x10) == 0xF3) SM64ROM.WriteEightBytes(F5-0x10, 0xF300000007000000 | (uint)(texelcount << 12) | linesperword);
+                    SM64ROM.WriteTwoBytes(F5 + 1, (ushort)((SM64ROM.ReadTwoBytes(F5CMDs[i] + 1) & 0xFC00) | ((width * selectedbitsize / 64) << 1)));
                 }
                 TextureBMP.Dispose();
             }

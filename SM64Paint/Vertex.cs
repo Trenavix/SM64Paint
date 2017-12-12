@@ -16,6 +16,7 @@ using OpenTK.Graphics;
 using OpenTK.Graphics.OpenGL;
 using static OpenTK.GLControl;
 using System.Drawing;
+using System.Windows.Forms;
 
 public struct Vertex
 {
@@ -117,26 +118,45 @@ public struct Vertex
     public static double[][] UVChecker(double[][] UVs)
     {
         bool reoccur = true;
+        uint count = 0;
         while (reoccur)
         {
-            bool UMinusRange = false;
-            bool VMinusRange = false;
-            bool URange = false;
-            bool VRange = false;
-            for (int i = 0; i < 3; i++)
+            try
             {
-                if (UVs[0][i] > 0x7FFF) URange = true;
-                else if (UVs[0][i] < -0x8000) UMinusRange = true;
-                if (UVs[1][i] > 0x7FFF) VRange = true;
-                else if (UVs[1][i] < -0x8000) VMinusRange = true;
+                bool UMinusRange = false;
+                bool VMinusRange = false;
+                bool URange = false;
+                bool VRange = false;
+                for (int i = 0; i < 3; i++)
+                {
+                    if (UVs[0][i] > 0x7FFF) URange = true;
+                    else if (UVs[0][i] < -0x8000) UMinusRange = true;
+                    if (UVs[1][i] > 0x7FFF) VRange = true;
+                    else if (UVs[1][i] < -0x8000) VMinusRange = true;
+                }
+                if (!UMinusRange && !VMinusRange && !URange && !VRange) reoccur = false;
+                for (int i = 0; i < 3; i++)
+                {
+                    if (URange) UVs[0][i] -= 0x03FF;
+                    else if (UMinusRange) UVs[0][i] += 0x0400;
+                    if (VRange) UVs[1][i] -= 0x03FF;
+                    else if (VMinusRange) UVs[1][i] += 0x0400;
+                }
+                count++;
+                if (count > 999999) throw new Exception("UVs out of range");
             }
-            if (!UMinusRange && !VMinusRange && !URange && !VRange) reoccur = false;
-            for (int i = 0; i < 3; i++)
+            catch (Exception)
             {
-                if (URange) UVs[0][i] -= 0x7FFF;
-                else if (UMinusRange) UVs[0][i] += 0x8000;
-                if (VRange) UVs[1][i] -= 0x7FFF;
-                else if (VMinusRange) UVs[1][i] += 0x8000;
+                DialogResult Continue = MessageBox.Show("UV Coordinates for this size out of range! Continue?\n(Not recommend)", "UVs out of range", MessageBoxButtons.YesNo);
+                if (Continue == DialogResult.Yes)
+                {
+                    return UVs;
+                }
+                else if (Continue == DialogResult.No)
+                {
+                    ROMManager.SM64ROM = null; ROMManager.ReadytoLoad = false;
+                    return UVs;
+                }
             }
         }
         return UVs;

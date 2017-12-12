@@ -59,7 +59,7 @@ class Renderer
         if (WireFrameMode) GL.PolygonMode(MaterialFace.FrontAndBack, PolygonMode.Line);
         else GL.PolygonMode(MaterialFace.FrontAndBack, PolygonMode.Fill);
         GL.Scale(0.000001, 0.000001, 0.000001);
-        if (ROMManager.ReadytoLoad)
+        if (ROMManager.ReadytoLoad && ROMManager.SM64ROM != null)
         {
             GL.Scale(0.01, 0.01, 0.01);
             GeoLayouts.ParseGeoLayout(ROMManager.SM64ROM, LevelScripts.getGeoAddress(LevelArea), false);

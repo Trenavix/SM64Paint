@@ -699,7 +699,6 @@ public class Textures
         UInt32 clamp = (UInt32)((((width - 1) << 2) << 12) | ((height - 1) << 2));
         for (uint i = 0; i < F5CMDs.Length; i++)
         {
-            //SM64ROM.changeByte(F5CMDs[i] + 2, (byte)(width / 2)); //Scan width for 16bpp
             SM64ROM.changeByte(F5CMDs[i] + 7, (byte)(WidthsizeByte + (difx * 16)));//*8 for << 4 with negative carried
             SM64ROM.WriteTwoBytes(F5CMDs[i] + 5, (ushort)(HeightsizeShort + (dify * 64)));//*8 for << 6 with negative carried
             SM64ROM.WriteFourBytes(F5CMDs[i] + 12, clamp); //F2 command follows F5 rendertile
@@ -732,9 +731,11 @@ public class Textures
                         UVs = Vertex.UVChecker(UVs);
                         for (uint k = 5; k < 8; k++)
                         {
-                            double value;
                             UInt32 addr = Vertex.getAddrFromTriIndex(UVStart, SM64ROM.getByte(j+k));
-                            if (UVs[0][k - 5] > 0x7fff || UVs[0][k - 5] < -0x8000) { value = UVs[0][k - 5]; throw new Exception(); }
+                            if (UVs[0][k - 5] > 0x7fff || UVs[0][k - 5] < -0x8000)
+                            {
+                                return;
+                            }
                             SM64ROM.WriteTwoBytes(addr, (ushort)Convert.ToInt16(UVs[0][k-5]));
                             SM64ROM.WriteTwoBytes(addr + 2, (ushort)Convert.ToInt16(UVs[1][k-5]));
                         }
@@ -750,7 +751,6 @@ public class Textures
                         break;
                 }
             }
-            //throw new Exception("imgaey");
         }
     }
 
