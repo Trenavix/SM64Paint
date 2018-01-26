@@ -26,6 +26,9 @@ public class F3D
     static bool EnvMapping = false;
     static bool ColourCombiner = false;
     public static bool RenderEdges = false;
+    public static bool Culling = true;
+    public static String[] DebugText;
+
     public static void ParseF3DDL(ROM SM64ROM, uint SegOffset, bool ColourBuffer)
     {
         F3D.DecodeF3DCommands(SM64ROM, SegOffset, ColourBuffer);
@@ -58,21 +61,18 @@ public class F3D
             }
         }
 
-        for (int i = 0; i < SM64ROM.getEndROMAddr(); i++)
+        for (uint i = 0; i < SM64ROM.getEndROMAddr(); i++)
         {
             byte[] CMD = DisplayList[i];
-            /*if (Textures.FirstTexLoad) //Debug Txt
+            if (Textures.FirstTexLoad && LevelScripts.DebugTXT) //Debug Txt
             {
-                using (System.IO.StreamWriter file = new System.IO.StreamWriter(@"e:\test4.txt", true))
+                Array.Resize(ref DebugText, DebugText.Length + 1);
+                DebugText[DebugText.Length - 1] = (Offset + (i * 8)).ToString("x") + ": "; //Addr: 
+                for (uint j = 0; j < 8; j++)
                 {
-                    for (uint j = 0; j < 8; j++)
-                    {
-                        file.Write(CMD[j].ToString("x") + " ");
-                    }
-                    file.WriteLine("\n");
-                    file.Close();
+                    DebugText[DebugText.Length-1] += CMD[j].ToString("x") + " "; //F3D CMD bytes in hex
                 }
-            } */
+            } 
             if (!ColourBuffer) switch (DisplayList[i][0])
             {
                 case 0x01:
@@ -117,6 +117,7 @@ public class F3D
                     break;
                 case 0x06:
                     F3D.DecodeF3DCommands(SM64ROM, returnSegmentAddr(CMD), ColourBuffer);
+                    if (CMD[1] == 1) return;
                     break;
                 case 0xB1:
                     /*GL.Begin(BeginMode.Triangles); //0xB1 is not used in F3D v1.0
@@ -142,7 +143,7 @@ public class F3D
                 case 0xB6:
                 case 0xB7:    
                     if (RenderEdges) break;
-                    if (CMD[6] >> 4 == 2) { GL.Disable(EnableCap.CullFace); }
+                    if (CMD[6] >> 4 == 2 || !Culling) { GL.Disable(EnableCap.CullFace); }
                     else if (CMD[6] >> 4 == 0) { GL.Enable(EnableCap.CullFace); GL.CullFace(CullFaceMode.Back); }
                     else if (CMD[6] >> 4 == 1) { GL.Enable(EnableCap.CullFace); GL.CullFace(CullFaceMode.Front); }
                     if ((CMD[5] & 0x0F) == 2) { GL.Disable(EnableCap.Lighting); LightingEnabled = false; }
@@ -153,8 +154,8 @@ public class F3D
                 case 0xBA:
                     break;
                 case 0xBB:
-                    Textures.S_Scale *= 0x10000 / (float)(CMD[4] * 0x100 + CMD[5]); //0x10000/
-                    Textures.T_Scale *= 0x10000 / (float)(CMD[6] * 0x100 + CMD[7]);
+                    Vertex.U_Scale = Convert.ToSingle((CMD[4] << 8) | CMD[5]) / Convert.ToSingle(0xFFFF);
+                    Vertex.V_Scale = Convert.ToSingle((CMD[6] << 8) | CMD[7]) / Convert.ToSingle(0xFFFF);
                     if (CMD[3] == 0x01 && Renderer.TextureEnabler && !RenderEdges) { GL.Enable(EnableCap.Texture2D); }
                     else
                     {
@@ -193,11 +194,11 @@ public class F3D
                     Textures.currentPalette = Textures.LoadRGBA16TextureData(CICount, SM64ROM);
                     break;
                 case 0xF2:
-                    Textures.S_Scale = ((CMD[5]) * 0x10 + ((CMD[6] & 0xF0) >> 4)) / 124f;//124 = 0x7C = scale 1.0
-                    Textures.T_Scale = ((CMD[6] & 0x0F) * 0x100 + CMD[7]) / 124f;//0x7C
+                    Textures.S_Scale = Convert.ToSingle((((CMD[5] << 4)| ((CMD[6] &0xF0) >> 4)) >> 2) + 1);
+                    Textures.T_Scale = Convert.ToSingle(((((CMD[6] & 0x0F) << 8) | CMD[7]) >> 2) +1);
                     break;
                 case 0xF3:
-                    if(SM64ROM.getSegmentStart(0x0E) < 0x1200000)TextureLoadRoutine(SM64ROM, 0);
+                    if(SM64ROM.getSegmentStart(0x0E) < 0x1200000 && !Renderer.ObjectView)TextureLoadRoutine(SM64ROM, 0);
                     break;
                 case 0xF5:
                     Textures.MODE = (byte)(CMD[1] >> 5);
@@ -245,17 +246,18 @@ public class F3D
                         break;
                     case 0x06:
                         F3D.DecodeF3DCommands(SM64ROM, returnSegmentAddr(CMD), ColourBuffer);
+                        if (CMD[1] == 1) return;
                         break;
                     case 0xB6:
                     case 0xB7:
-                        if (CMD[6] >> 4 == 2) { GL.Disable(EnableCap.CullFace); }
+                        if (CMD[6] >> 4 == 2 || !Culling) { GL.Disable(EnableCap.CullFace); }
                         else if (CMD[6] >> 4 == 0) { GL.Enable(EnableCap.CullFace); GL.CullFace(CullFaceMode.Back); }
                         else if (CMD[6] >> 4 == 1) { GL.Enable(EnableCap.CullFace); GL.CullFace(CullFaceMode.Front); }
                         if ((CMD[5] & 0x0F) == 2) LightingEnabled = false;
                         else LightingEnabled = true;
                         break;
                     case 0xBF:
-                        if (LightingEnabled) break;
+                        //if (LightingEnabled) break;
                         Vertex[] Triangle = new Vertex[3];
                         Color4[] colour = new Color4[3];
                         for (int j = 5; j < 8; j++)

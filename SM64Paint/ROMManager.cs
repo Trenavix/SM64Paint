@@ -23,10 +23,10 @@ public class ROMManager
     {
         using (FileStream fs = new FileStream(BinDirectory, FileMode.Open, FileAccess.Read))
         {
-            byte[] binFile = new byte[fs.Length];
-            fs.Read(binFile, 0, (int)fs.Length);
-            ROM NewBTBin = new ROM(binFile);
-            SM64ROM = NewBTBin;
+            byte[] ROMFile = new byte[fs.Length];
+            fs.Read(ROMFile, 0, (int)fs.Length);
+            ROM NewSM64ROM = new ROM(ROMFile);
+            SM64ROM = NewSM64ROM;
             fs.Close();
         }
         InitialiseModelLoad(ClientRectangle, RenderPanel, Width, Height);
@@ -35,6 +35,11 @@ public class ROMManager
     public static void SetVertRGBA(uint Addr, UInt32 colour)
     {
         SM64ROM.WriteFourBytes(Addr + 12, colour);
+    }
+
+    public static void SetVertAlpha(uint Addr, byte alpha)
+    {
+        SM64ROM.changeByte(Addr + 15, alpha);
     }
 
     public static void ForceVertRGBA(bool Opaque)
@@ -73,6 +78,7 @@ public class ROMManager
             }
             else if (SM64ROM.getByte(j) == 0xB8) return;
             else if (SM64ROM.getByte(j) == 0xB7 && SM64ROM.getByte(j + 5) == 0) SM64ROM.WriteEightBytes(j, 0xB700000000020000);
+            else if (SM64ROM.getByte(j) == 0xB7 && SM64ROM.getByte(j + 5) == 1) SM64ROM.WriteEightBytes(j, 0xB600000000020000);
             /*else if (SM64ROM.getByte(j) == 0x03) SM64ROM.WriteEightBytes(j, 0xE700000000000000);
             else if (SM64ROM.getByte(j) == 0x06) ForceVertRGBAJump(SM64ROM.readSegmentAddr(SM64ROM.ReadFourBytes(j + 4)), Opaque);
             else if (SM64ROM.getByte(j) == 0xB8)

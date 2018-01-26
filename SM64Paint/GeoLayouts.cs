@@ -25,6 +25,7 @@ public class GeoLayouts
     public static uint[] AlphaModels;
     public static uint ExtAlphaDLPointer = 0; //Needed to repoint in extended roms
     public static uint[][] ExtDLPointers;
+    public static bool AVGAlpha = false;
 
     public static void ParseGeoLayout(ROM SM64ROM, uint offset, bool ColourBuffer)
     {
@@ -35,10 +36,19 @@ public class GeoLayouts
             for (int i = 0; i < 7; i++) ExtDLPointers[i] = new uint[0];
         } 
         OpaqueRendered = false;
+        GL.DepthMask(true);
+        if(!F3D.RenderEdges) GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
         DecodeGeoLayout(SM64ROM, offset, ColourBuffer);
         OpaqueRendered = true;
         DecodeGeoLayout(SM64ROM, offset, ColourBuffer);
-        if(!ColourBuffer) Textures.FirstTexLoad = false;
+        if (Textures.FirstTexLoad)
+        {
+            int originalsize = LevelScripts.DebugScript.Length;
+            Array.Resize(ref LevelScripts.DebugScript, LevelScripts.DebugScript.Length + F3D.DebugText.Length);
+            Array.Copy(F3D.DebugText, 0, LevelScripts.DebugScript, originalsize, F3D.DebugText.Length);
+            if(LevelScripts.DebugTXT) System.IO.File.WriteAllLines(@"e:\SM64PaintDebug.txt", LevelScripts.DebugScript);
+        }
+        if (!ColourBuffer) Textures.FirstTexLoad = false;
     }
     public static void DecodeGeoLayout(ROM SM64ROM, uint offset, bool ColourBuffer)
     {
@@ -156,18 +166,16 @@ public class GeoLayouts
                     increment = 4;
                     break;
             }
-            /*if(Textures.FirstTexLoad)using (System.IO.StreamWriter file = new System.IO.StreamWriter(@"e:\test4.txt", true)) //Debug Txt
+            if (Textures.FirstTexLoad && LevelScripts.DebugTXT) // Debug TXT
             {
-                file.Write(i.ToString("x") + ": ");
+                Array.Resize(ref LevelScripts.DebugScript, LevelScripts.DebugScript.Length + 1);
+                LevelScripts.DebugScript[LevelScripts.DebugScript.Length - 1] = i.ToString("x") + ": ";
                 for (uint j = i; j < i + increment; j++)
                 {
-                    file.Write(SM64ROM.getByte(j).ToString("x") + " ");
+                    LevelScripts.DebugScript[LevelScripts.DebugScript.Length - 1] += SM64ROM.getByte(j).ToString("x") + " ";
                 }
-                file.WriteLine("\n");
-                file.Close();
-            }*/
+            } 
             i += increment;
-
         }
     }
 
@@ -184,7 +192,7 @@ public class GeoLayouts
     private static void DecideBufferAndAddr(ulong CMD, uint segaddr, bool ColourBuffer)
     {
         byte layer = (byte)((CMD >> 48) & 0xFF);
-        if (layer == 2 || layer == 6) GL.DepthRange(0.00001, 0.99999f);
+        if (layer == 2 || layer == 6) GL.DepthRange(0.0001, 0.9999f);
         else GL.DepthRange(0, 1f);
         if (ColourBuffer || F3D.RenderEdges)
         {
@@ -194,16 +202,27 @@ public class GeoLayouts
             GL.Disable(EnableCap.AlphaTest);
             if (F3D.RenderEdges)
             {
-                GL.DepthRange(0.00001, 0.99999f);
+                GL.DepthRange(0.0001, 0.9999f);
             }
             return;
         }
-        if (layer > 4)
+        /*if (layer > 4)
         {
             GL.Enable(EnableCap.Blend);
             GL.BlendFunc(BlendingFactorSrc.SrcAlpha, BlendingFactorDest.OneMinusSrcAlpha);
         }
-        else GL.Disable(EnableCap.Blend);
+        else GL.Disable(EnableCap.Blend);*/
+        if (layer > 4)
+        {
+            GL.Enable(EnableCap.Blend);
+            GL.BlendFunc(BlendingFactorSrc.SrcAlpha, BlendingFactorDest.OneMinusSrcAlpha);
+            if(!F3D.RenderEdges && AVGAlpha)GL.DepthMask(false);
+        }
+        else
+        {
+            GL.Disable(EnableCap.Blend);
+            GL.DepthMask(true);
+        }
         if (layer == 4)
         {
             GL.Enable(EnableCap.AlphaTest);

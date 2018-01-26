@@ -601,7 +601,8 @@ public class Textures
                }
                else if (CIMode) //CI4
                {
-                    if (bmp.Width * bmp.Height > 0x1000) {MessageBox.Show("CI4 cannot be above 64x64 due to\nTMEM limitations with palettes.", "Texture too large"); return; }
+                    if (bmp.Width * bmp.Height > 0x1000)
+                    { MessageBox.Show("CI4 cannot be above 64x64 due to\nTMEM limitations with palettes.", "Texture too large"); return; }
                     Color[] colours = getImageColors(bmp);
                     UInt32 paletteaddr = (UInt32)(addr + (bmp.Width * bmp.Height/2)); //Put palette right after CI data
                     for (int i=0; i<colours.Length;i++)
@@ -638,7 +639,8 @@ public class Textures
                                 SM64ROM.copyBytes(j, branchDLAddr + 0x28, 8);
                                 SM64ROM.WriteTwoBytes(j, 0x0600); //Branch to load routine
                                 SM64ROM.WriteFourBytes(j + 4, branchDLSegAddr);
-                                if (SM64ROM.getByte(j + 0x10) == 0x06) SM64ROM.WriteEightBytes(j + 0x10, 0xE600000000000000); //Revert the TMEM shift undo (This tex still needs TMEM shift)
+                                if (SM64ROM.getByte(j + 0x10) == 0x06)
+                                    SM64ROM.WriteEightBytes(j + 0x10, 0xE600000000000000); //Revert the TMEM shift undo (This tex still needs TMEM shift)
                                 break;
                             }
                         }
@@ -648,7 +650,8 @@ public class Textures
                         bool firsttexture = (i == 0 && SM64ROM.getByte(F5CMDs[0] + 0x10) == 0xFD);
                         for (uint j = F5CMDs[i]; j < SM64ROM.getEndROMAddr(); j += 8) 
                         {
-                            if (firsttexture && SM64ROM.getByte(j + 0x20) == 0xF3) { j += 0x20; SM64ROM.WriteEightBytes(j + 0x20, 0xF3000000073FF000 | linesperword); } //Update first texture command
+                            if (firsttexture && SM64ROM.getByte(j + 0x20) == 0xF3)
+                            { j += 0x20; SM64ROM.WriteEightBytes(j + 0x20, 0xF3000000073FF000 | linesperword); } //Update first texture command
                             if (SM64ROM.getByte(j) == 0x06) break; //If next texture is CI then don't revert the tmem shift
                             else if (SM64ROM.getByte(j) == 0xE6)
                             {
@@ -718,6 +721,7 @@ public class Textures
                                 UVStart = SM64ROM.readSegmentAddr(SM64ROM.ReadFourBytes(k + 4)) + 8; break;
                             }
                         }
+                        if (UVStart == 0) break;
                         for (uint k = 5; k < 8; k ++)
                         {
                             UInt32 addr = Vertex.getAddrFromTriIndex(UVStart, SM64ROM.getByte(j+k));
@@ -752,6 +756,58 @@ public class Textures
                 }
             }
         }
+    }
+
+    public static void CentreUVs(bool ChangeU, int F5index, int width, int height)
+    {
+        uint[] F5CMDs = Textures.F5CMDArray[F5index]; ROM SM64ROM = ROMManager.SM64ROM;
+        for (uint i = 0; i < F5CMDs.Length; i++)
+        {
+            bool exitUVcorrection = false;
+            for (uint j = F5CMDs[i] + 8; j < SM64ROM.getEndROMAddr(); j += 8)
+            {
+                if (exitUVcorrection) break;
+                switch (SM64ROM.getByte(j))
+                {
+                    case 0xBF:
+                        UInt32 UVStart = 0;
+                        short[][] UVs = new short[2][]; for (int k = 0; k < 2; k++) { UVs[k] = new short[3]; }
+                        for (uint k = j; k > j - 0x800; k -= 8)
+                        {
+                            if (SM64ROM.getByte(k) == 0x04)
+                            {
+                                UVStart = SM64ROM.readSegmentAddr(SM64ROM.ReadFourBytes(k + 4)) + 8; break;
+                            }
+                        }
+                        if (UVStart == 0) break;
+                        for (uint k = 5; k < 8; k++)
+                        {
+                            UInt32 addr = Vertex.getAddrFromTriIndex(UVStart, SM64ROM.getByte(j + k));
+                            UVs[0][k-5] = (short)SM64ROM.ReadTwoBytes(addr);
+                            UVs[1][k-5] = (short)SM64ROM.ReadTwoBytes(addr + 2);
+                        }
+                        UVs = Vertex.CentreTRIUVs(UVs, width, height, ChangeU);
+                        for (uint k = 5; k < 8; k++)
+                        {
+                            UInt32 addr = Vertex.getAddrFromTriIndex(UVStart, SM64ROM.getByte(j + k));
+                            if (ChangeU) SM64ROM.WriteTwoBytes(addr, (ushort)UVs[0][k - 5]);
+                            else SM64ROM.WriteTwoBytes(addr + 2, (ushort)UVs[1][k - 5]);
+                        }
+                        break;
+                    case 0xFD:
+                        exitUVcorrection = true;
+                        break;
+                    case 0x06:
+                        exitUVcorrection = true;
+                        break;
+                    case 0xB8:
+                        exitUVcorrection = true;
+                        break;
+                }
+            }
+
+        }
+
     }
 
     public static Vector2 getWidthHeightPowers(int F5Index)
@@ -809,5 +865,36 @@ public class Textures
             }
         }
         return CIData;
+    }
+
+    public static void RGBA32Check(int F5CMDsIDX, int bitsize, int width)
+    {
+        ROM SM64ROM = ROMManager.SM64ROM;
+        UInt32[] F5CMDs = F5CMDArray[F5CMDsIDX];
+        for (uint i = 0; i < F5CMDs.Length; i++)
+        {
+            if (bitsize == 32)
+            {
+                SM64ROM.changeByte(F5CMDs[i] + 2, (byte)(width / 2)); // rgba32 special case: linesperword
+            }
+            for (uint j = F5CMDs[i]; j > F5CMDs[i] - 0x50; j -= 8) //RGBA32 special case: different settile and loadblock
+            {
+                switch (SM64ROM.getByte(j))
+                {
+                    case 0xF3:
+                        if (bitsize != 32) break; //if not rgba32, break
+                        ushort texelcount = (ushort)((SM64ROM.ReadTwoBytes(j + 5) >> 4) +1);
+                        texelcount /= 2; texelcount--;
+                        texelcount <<= 4;
+                        SM64ROM.WriteTwoBytes(j + 5, texelcount);
+                        break;
+                    case 0xF5:
+                        if (SM64ROM.getByte(j + 4) != 0x07) break; //if not settile, break
+                        if (bitsize == 32) SM64ROM.changeByte(j + 1, 0x18);
+                        else SM64ROM.changeByte(j + 1, 0x10);
+                        return;
+                }
+            }
+        }
     }
 }

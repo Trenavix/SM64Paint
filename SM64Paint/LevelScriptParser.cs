@@ -23,6 +23,7 @@ public class LevelScripts
     public static bool ExitDecode = false;
     public static bool GeoFound = false;
     public static uint[] GeoLayoutOffsets = new uint[0];
+    public static uint[][] ObjectGeoOffsets = new uint[0x1F][];
     static uint NewSegment;
     static uint NewSegAddr;
     static UInt32 JumpSegAddr;
@@ -32,11 +33,22 @@ public class LevelScripts
     static List<uint> LoadAddresses = new List<uint>();
     public static uint ExtCollisionPointer = 0; //Needed to repoint for extended roms
     public static uint Ext0EBankEnd = 0;
+    public static bool DebugTXT = false;
+    public static String[] DebugScript;
 
     public static void ParseLevelScripts(ROM SM64ROM, UInt32 offset)
     {
+        DebugScript = new String[0];
+        F3D.DebugText = new String[0];
+        for (uint i = 0; i < 0x1F; i++)
+        { ObjectGeoOffsets[i] = new uint[0]; }
         GeoLayoutOffsets = new uint[0];
         DecodeLevelScripts(SM64ROM, offset);
+        if (DebugTXT)
+        {
+            Array.Resize(ref DebugScript, DebugScript.Length + 1);
+            DebugScript[DebugScript.Length - 1] = "";
+        } 
     }
 
     public static void DecodeLevelScripts(ROM SM64ROM, UInt32 offset)
@@ -45,16 +57,15 @@ public class LevelScripts
         for (UInt32 i = offset; i < SM64ROM.getEndROMAddr();)
         {
             uint increment = SM64ROM.getByte(i + 1);
-            /*using (System.IO.StreamWriter file = new System.IO.StreamWriter(@"e:\test4.txt", true))
+            if (DebugTXT)
             {
-                file.Write(i.ToString("x") + ": ");
+                Array.Resize(ref DebugScript, DebugScript.Length + 1);
+                DebugScript[DebugScript.Length - 1] = i.ToString("x") + ": ";
                 for (uint j = i; j < i + increment; j++)
                 {
-                    file.Write(SM64ROM.getByte(j).ToString("x") + " ");
+                    DebugScript[DebugScript.Length - 1] += SM64ROM.getByte(j).ToString("x") + " ";
                 }
-                file.WriteLine("\n");
-                file.Close();
-            }*/
+            } 
             if (increment == 0 || SM64ROM.getByte(i) > 0x3C || ExitDecode) return;
             switch (SM64ROM.getByte(i))
             {
@@ -133,7 +144,22 @@ public class LevelScripts
                     //obj model w/o geolayout
                     break;
                 case 0x22:
+                    int seg = SM64ROM.getByte(i + 4);
+                    Array.Resize(ref ObjectGeoOffsets[seg], ObjectGeoOffsets[seg].Length + 1);
+                    uint OBJSegAddr = SM64ROM.ReadFourBytes(i + 4);
+                    ObjectGeoOffsets[seg][ObjectGeoOffsets[seg].Length - 1] = SM64ROM.readSegmentAddr(OBJSegAddr);
                     //obj model w/ geolayout
+                    break;
+                case 0x2B:
+                    //Default Mario Position
+                    short YRotation = (short)SM64ROM.ReadTwoBytes(i + 4);
+                    int X = (short)-SM64ROM.ReadTwoBytes(i + 6);
+                    int Y = (short)SM64ROM.ReadTwoBytes(i + 8)+250; //+250 to be above ground
+                    int Z = (short)-SM64ROM.ReadTwoBytes(i + 10);
+                    Vector3 location = new Vector3(X, Y, Z) * Renderer.WorldScale * Renderer.GameScale;
+                    Renderer.cam.SetCamPosition(location);
+                    float YRotRadians = Convert.ToSingle(YRotation) / 180f * Convert.ToSingle(Math.PI);
+                    Renderer.cam.SetCamOrientation(new Vector3(-YRotRadians - Convert.ToSingle(Math.PI / 2), 0f, YRotRadians));
                     break;
                 case 0x2E:
                     ExtCollisionPointer = i; //Needed to repoint for extended roms

@@ -21,6 +21,8 @@ using System.Windows.Forms;
 public struct Vertex
 {
     public static readonly int MaxInt16 = 0x7FFF;
+    public static float U_Scale = 1;
+    public static float V_Scale = 1;
     public static UInt32[] CurrentVertexList = new UInt32[0];
     public static UInt32[][][] OriginalVertexMem = new UInt32[30][][]; //30 undo levels
     public static UInt32[][][] EditedVertexMem = new UInt32[30][][]; //30 redo levels
@@ -84,7 +86,7 @@ public struct Vertex
 
     public Vector2 getUVVector()
     {
-        return new Vector2((float)U / (0x400) / Textures.S_Scale, (float)V / (0x400) / Textures.T_Scale);
+        return new Vector2((float)U / (0x20) / Textures.S_Scale *U_Scale, (float)V / (0x20) / Textures.T_Scale*V_Scale);
     }
 
     public Vector4 getRGBAVector()
@@ -160,6 +162,57 @@ public struct Vertex
             }
         }
         return UVs;
+    }
+
+    public static short[][] CentreTRIUVs(short[][] UVs, int width, int height, bool U)
+    {
+        if (U && MaxMinTRIUVs(UVs)[0][1] - MaxMinTRIUVs(UVs)[0][0] > width * 0x30) return UVs;
+        else if (!U && MaxMinTRIUVs(UVs)[1][1] - MaxMinTRIUVs(UVs)[1][0] > height * 0x30) return UVs;
+        while (U && MaxMinTRIUVs(UVs)[0][0] < -width * 0x20)
+        {
+            for (uint i = 0; i < 3; i++)
+            { UVs[0][i] += (short)(width * 0x20); }
+        }
+        while (U && MaxMinTRIUVs(UVs)[0][1] > width * 0x20)
+        {
+            for (uint i = 0; i < 3; i++)
+            { UVs[0][i] -= (short)(width * 0x20); }
+        }
+        while (!U && MaxMinTRIUVs(UVs)[1][0] < -height * 0x20)
+        {
+            for (uint i = 0; i < 3; i++)
+            { UVs[1][i] += (short)(height * 0x20); }
+        }
+        while (!U && MaxMinTRIUVs(UVs)[1][1] > height * 0x20)
+        {
+            for (uint i = 0; i < 3; i++)
+            { UVs[1][i] -= (short)(height * 0x20); }
+        }
+        return UVs;
+    }
+
+    public static short[][] MaxMinTRIUVs(short[][] UVs)
+    {
+        //set mins/maxes to opposite side of spectrum for worst-case scenario and detect further from UVs
+        short Umin = 0x7FFF;
+        short Umax = -0x8000;
+        short Vmin = 0x7FFF;
+        short Vmax = -0x8000;
+        for (uint i = 0; i < 3; i++) //Us
+        {
+            if (UVs[0][i] > Umax) Umax = UVs[0][i];
+            if (UVs[0][i] < Umin) Umin = UVs[0][i];
+        }
+        for (uint i = 0; i < 3; i++) //Vs
+        {
+            if (UVs[1][i] > Vmax) Vmax = UVs[1][i];
+            if (UVs[1][i] < Vmin) Vmin = UVs[1][i];
+        }
+        short[][] MinMax = new short[2][];
+        for (byte i = 0; i < 2; i++) MinMax[i] = new short[2];
+        MinMax[0][0] = Umin; MinMax[0][1] = Umax;
+        MinMax[1][0] = Vmin; MinMax[1][1] = Vmax;
+        return MinMax;
     }
 
 
