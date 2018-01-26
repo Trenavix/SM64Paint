@@ -82,7 +82,7 @@ namespace SM64Paint
         private void aboutToolStripMenuItem1_Click(object sender, EventArgs e)
         {
             MessageBox.Show("**************************************************************\n" + 
-                "*                                   SM64Paint v0.3.5                                     *\n" +
+                "*                                 SM64Paint v0.3.5.1                                   *\n" +
                 "**************************************************************\n" + 
                 "This is an early beta of a vertex painter for SM64.\n" +
                 "This program was coded entirely by Trenavix, and is far from finished.\n"+
@@ -146,8 +146,8 @@ namespace SM64Paint
                 {
                     float movementX = oldXYDelta.X + ((Control.MousePosition.X - lastMousePos.X) * MouseSensitivity); //last rotation + new rotation (Both are differences)
                     float movementY = oldXYDelta.Y + ((Control.MousePosition.Y - lastMousePos.Y) * MouseSensitivity);
-                    if (movementY > 285) movementY = 285;// limit Y axis rotation
-                    else if (movementY < -314) movementY = -314;
+                    if (movementY > 1.57) movementY = 1.57f;// limit Y axis rotation
+                    else if (movementY < -1.57) movementY = -1.57f;
                     Renderer.cam.AddRotation(movementX, movementY);
                     XYEnd.X = movementX;
                     XYEnd.Y = movementY;
@@ -305,6 +305,7 @@ namespace SM64Paint
             {
                 File.WriteAllBytes(SaveROM.FileName, ROMManager.SM64ROM.getCurrentROM());
                 currentROMPath = SaveROM.FileName;
+                StatusLabel.Text = "ROM Saved to " + currentROMPath;
             }
         }
         
