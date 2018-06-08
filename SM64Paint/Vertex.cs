@@ -117,7 +117,7 @@ public struct Vertex
         return addr;
     }
 
-    public static double[][] UVChecker(double[][] UVs)
+    public static double[][] UVChecker(double[][] UVs, out bool isFailedToResize)
     {
         bool reoccur = true;
         uint count = 0;
@@ -149,18 +149,13 @@ public struct Vertex
             }
             catch (Exception)
             {
-                DialogResult Continue = MessageBox.Show("UV Coordinates for this size out of range! Continue?\n(Not recommend)", "UVs out of range", MessageBoxButtons.YesNo);
-                if (Continue == DialogResult.Yes)
-                {
-                    return UVs;
-                }
-                else if (Continue == DialogResult.No)
-                {
-                    ROMManager.SM64ROM = null; ROMManager.ReadytoLoad = false;
-                    return UVs;
-                }
+                isFailedToResize = true;
+                DialogResult Continue = MessageBox.Show("UV Coordinates for this size out of range! Revert to old mode", "UVs out of range", MessageBoxButtons.OK);
+                return UVs;
             }
         }
+
+        isFailedToResize = false;
         return UVs;
     }
 
