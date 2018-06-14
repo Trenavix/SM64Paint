@@ -41,10 +41,10 @@ namespace SM64Paint
         public static extern int BitBlt(IntPtr hDC, int x, int y, int nWidth, int nHeight, IntPtr hSrcDC, int xSrc, int ySrc, int dwRop);
         MouseState state; KeyboardState keystate;
         public static Vector2 oldXYDelta = new Vector2(0, 0);
-        Vector2 XYEnd = new Vector2(0,0);
+        Vector2 XYEnd = new Vector2(0, 0);
         String currentROMPath;
         readonly String PaletteFile = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "SM64Paint_Palette.png");
-        public readonly float MouseSensitivity  = 0.005f;
+        public readonly float MouseSensitivity = 0.005f;
 
         public MainForm()
         {
@@ -61,7 +61,7 @@ namespace SM64Paint
             whiteGraphics.FillRectangle(System.Drawing.Brushes.White, 0, 0, 16, 1); ColourPreview.Image = white;
             lastMousePos.X = (Bounds.Left + Bounds.Width / 2);
             RenderPanel.MouseDown += new MouseEventHandler(RenderPanel_MouseDown);
-            RenderPanel.MouseMove += new MouseEventHandler (RenderPanel_MouseMove);
+            RenderPanel.MouseMove += new MouseEventHandler(RenderPanel_MouseMove);
             RenderPanel.MouseUp += new MouseEventHandler(RenderPanel_MouseUp);
             RenderPanel.MouseWheel += new MouseEventHandler(RenderPanel_MouseWheel);
             RenderPanel.KeyDown += new KeyEventHandler(RenderPanel_KeyDown);
@@ -72,11 +72,11 @@ namespace SM64Paint
             this.TexturePreview.ContextMenuStrip = this.RightClickTexture;
             FormClosing += new FormClosingEventHandler(MainForm_FormClosing);
         }
-        
+
 
         private void MainForm_FormClosing(object sender, FormClosingEventArgs e)
         {
-            if(ROMManager.SM64ROM != null) SavePaletteIMG();
+            if (ROMManager.SM64ROM != null) SavePaletteIMG();
         }
 
         private static OpenFileDialog OFD() => new OpenFileDialog();
@@ -84,15 +84,15 @@ namespace SM64Paint
 
         private void aboutToolStripMenuItem1_Click(object sender, EventArgs e)
         {
-            MessageBox.Show("**************************************************************\n" + 
+            MessageBox.Show("**************************************************************\n" +
                 "*                                 SM64Paint v0.3.6                                       *\n" +
-                "**************************************************************\n" + 
+                "**************************************************************\n" +
                 "This is an early beta of a graphics editor for SM64.\n" +
-                "This program was coded by Trenavix, and is far from finished.\n"+
-                "It is licensed by GPL and is available at: \nGitHub.com/Trenavix/SM64Paint\n"+
-                "Author's pages:\nYouTube.com/Trenavix\nPatreon.com/Trenavix\n" + 
+                "This program was coded by Trenavix, and is far from finished.\n" +
+                "It is licensed by GPL and is available at: \nGitHub.com/Trenavix/SM64Paint\n" +
+                "Author's pages:\nYouTube.com/Trenavix\nPatreon.com/Trenavix\n" +
                 "(SM64Paint Icon was designed entirely by Quasmok)\n" +
-                "Also, huge shoutout to DavidSM64, shygoo, and aglab2 for various notes, tips, and help.", 
+                "Also, huge shoutout to DavidSM64, shygoo, and aglab2 for various notes, tips, and help.",
                 "About", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
         private void controlsToolStripMenuItem_Click(object sender, EventArgs e)
@@ -113,7 +113,7 @@ namespace SM64Paint
                 "F: Toggle WireFrame\n" +
                 "R: Hide Control Panel\n" +
                 "Space: Toggle Edges\n" +
-                "C+Left Click: Grab Colour from model\n"+
+                "C+Left Click: Grab Colour from model\n" +
                 "(Shift+)Page-Up/Down: Change level(area)\n" +
                 "Alt+Enter or Esc: Toggle Fullscreen",
                 "Controls", MessageBoxButtons.OK, MessageBoxIcon.Information);
@@ -144,7 +144,7 @@ namespace SM64Paint
                 }
             }
             else Cursor.Current = Cursors.Default;
-            if (state[MouseButton.Left] && !keystate[Key.C]) 
+            if (state[MouseButton.Left] && !keystate[Key.C])
             {
                 if (pt.X > 0 && pt.Y > 0 && pt.X < Boundaries.X && pt.Y < Boundaries.Y && this.ContainsFocus == true)//Left Click in GLControl & windowfocused
                 {
@@ -249,7 +249,7 @@ namespace SM64Paint
                 case Keys.R:
                     if (ROMManager.SM64ROM == null || keystate[Key.ControlLeft]) break; //No control panel if rom unopened or ctrl held (Ctrl+R = reload rom)
                     ControlPanel.Visible = !ControlPanel.Visible;
-                    if (ControlPanel.Visible) { RenderPanel.Width -= ControlPanel.Width;}
+                    if (ControlPanel.Visible) { RenderPanel.Width -= ControlPanel.Width; }
                     else RenderPanel.Width += ControlPanel.Width;
                     break;
                 case Keys.Enter:
@@ -278,15 +278,15 @@ namespace SM64Paint
                     break;
                 case MouseButtons.Right:
                     break;
-            }     
+            }
         }
 
         void RenderPanel_MouseWheel(object sender, System.Windows.Forms.MouseEventArgs e)
         {
-            if(cam.MoveSpeed > 0f) cam.MoveSpeed += 0.0000001f* Renderer.GameScale.X* e.Delta;
-            if(cam.MoveSpeed <= 0f) cam.MoveSpeed = 0.000005f*Renderer.GameScale.X;
+            if (cam.MoveSpeed > 0f) cam.MoveSpeed += 0.0000001f * Renderer.GameScale.X * e.Delta;
+            if (cam.MoveSpeed <= 0f) cam.MoveSpeed = 0.000005f * Renderer.GameScale.X;
         }
-       
+
         private void SaveROMAs_Click(object sender, EventArgs e)
         {
             // Displays a SaveFileDialog so the user can save the bin  
@@ -300,7 +300,7 @@ namespace SM64Paint
                 StatusLabel.Text = "ROM Saved to " + currentROMPath;
             }
         }
-        
+
         private void OpenROM_Click(object sender, EventArgs e)
         {
             OpenROM();
@@ -358,7 +358,7 @@ namespace SM64Paint
             AreaComboBox.Items.Clear();
             for (int i = 0; i < LevelScripts.GeoLayoutOffsets.Length; i++)
             {
-                AreaComboBox.Items.Add(i+1);
+                AreaComboBox.Items.Add(i + 1);
             }
             AreaComboBox.SelectedIndex = 0;
             SegmentList.Items.Clear();
@@ -374,7 +374,7 @@ namespace SM64Paint
             ROMManager.AdjustAlphaCombiners();
             ROMManager.AdjustOpaqueCombiners();
             groupBoxForce.Visible = ROMManager.LevelHasLighting();
-            if(!ObjectView)TextureEditorCreation();
+            if (!ObjectView) TextureEditorCreation();
         }
 
         public void TextureEditorCreation()
@@ -394,11 +394,11 @@ namespace SM64Paint
             LevelArea = (uint)AreaComboBox.SelectedIndex;
             ROMManager.InitialiseModelLoad(ClientRectangle, RenderPanel, Width, Height);
             UpdateStatusText();
-            if (ROMManager.SM64ROM.getSegmentStart(0x0E) < 0x1200000) { TexturesGroupBox.Visible = false; groupBoxForce.Visible = false;  return; }
+            if (ROMManager.SM64ROM.getSegmentStart(0x0E) < 0x1200000) { TexturesGroupBox.Visible = false; groupBoxForce.Visible = false; return; }
             ROMManager.AdjustAlphaCombiners();
             ROMManager.AdjustOpaqueCombiners();
             groupBoxForce.Visible = ROMManager.LevelHasLighting();
-            if(!ObjectView)TextureEditorCreation();
+            if (!ObjectView) TextureEditorCreation();
         }
 
         private void ForceVertRGBAButton_Click(object sender, EventArgs e)
@@ -609,7 +609,7 @@ namespace SM64Paint
             uint index = (uint)TextureNumBox.SelectedIndex;
             byte SParamByte = ROMManager.SM64ROM.getByte(Textures.F5CMDArray[index][0] + 6);
             int Sparam = (SParamByte & 0x03);
-            int dif = SPropertiesBox.SelectedIndex-Sparam;
+            int dif = SPropertiesBox.SelectedIndex - Sparam;
             for (uint i = 0; i < Textures.F5CMDArray[index].Length; i++)
             { ROMManager.SM64ROM.changeByte(Textures.F5CMDArray[index][i] + 6, (byte)(SParamByte + dif)); }
             ROMManager.InitialiseModelLoad(ClientRectangle, RenderPanel, Width, Height);
@@ -640,7 +640,7 @@ namespace SM64Paint
             int Format = FormatByte >> 5;
             int dif = TexFormatBox.SelectedIndex - Format;
             for (uint i = 0; i < Textures.F5CMDArray[index].Length; i++)
-            { ROMManager.SM64ROM.changeByte(Textures.F5CMDArray[index][i] + 1, (byte)(FormatByte + (dif*32))); } //*32 for << 5 with negative carried
+            { ROMManager.SM64ROM.changeByte(Textures.F5CMDArray[index][i] + 1, (byte)(FormatByte + (dif * 32))); } //*32 for << 5 with negative carried
             ROMManager.InitialiseModelLoad(ClientRectangle, RenderPanel, Width, Height);
             UpdateTextureNum();
             WaitToRender = false;
@@ -657,7 +657,7 @@ namespace SM64Paint
             int BitsizePWR = ((BitsizeByte >> 3) & 0x03);
             int dif = BitsizeBox.SelectedIndex - BitsizePWR;
             byte bitsize = (byte)(BitsizeByte + (dif * 8)); //*8 for << 3 with negative carried
-            for (uint i = 0; i < F5CMDs.Length; i++) 
+            for (uint i = 0; i < F5CMDs.Length; i++)
             {
                 SM64ROM.changeByte(F5CMDs[i] + 1, bitsize);
             }
@@ -682,7 +682,7 @@ namespace SM64Paint
                 Textures.ResizeFailure = true;
                 return;
             }
-            if (!WaitToRender)ROMManager.InitialiseModelLoad(ClientRectangle, RenderPanel, Width, Height);
+            if (!WaitToRender) ROMManager.InitialiseModelLoad(ClientRectangle, RenderPanel, Width, Height);
             if (!WaitToRender) UpdateTextureNum();
         }
 
@@ -708,7 +708,7 @@ namespace SM64Paint
             if (OpenTexture.ShowDialog() == System.Windows.Forms.DialogResult.OK)
             {
                 Bitmap TextureBMP = (Bitmap)Image.FromFile(OpenTexture.FileName);
-                if(FlipYCheckBox.Checked) TextureBMP.RotateFlip(RotateFlipType.RotateNoneFlipY);
+                if (FlipYCheckBox.Checked) TextureBMP.RotateFlip(RotateFlipType.RotateNoneFlipY);
                 double widthpower = Math.Log(TextureBMP.Width, 2);
                 double heightpower = Math.Log(TextureBMP.Height, 2);
                 if ((widthpower % 1) != 0 || (heightpower % 1) != 0)
@@ -740,13 +740,13 @@ namespace SM64Paint
                 ROMManager.InitialiseModelLoad(ClientRectangle, RenderPanel, Width, Height);
                 UpdateTextureNum();
                 int width = TextureBMP.Width;
-                int selectedbitsize = (int)(4*Math.Pow(2, BitsizeBox.SelectedIndex));
+                int selectedbitsize = (int)(4 * Math.Pow(2, BitsizeBox.SelectedIndex));
                 ushort linesperword = Convert.ToUInt16((64d * 2048d) / ((double)TextureBMP.Width * selectedbitsize));
                 ushort texelcount = (ushort)((double)(TextureBMP.Width * TextureBMP.Height) * ((double)selectedbitsize / 16d) - 1);
                 for (uint i = 0; i < F5CMDs.Length; i++) //Update F5 scanline width 
                 {
                     uint F5 = F5CMDs[i];
-                    if (SM64ROM.getByte(F5 - 0x10) == 0xF3) SM64ROM.WriteEightBytes(F5-0x10, 0xF300000007000000 | (uint)(texelcount << 12) | linesperword);
+                    if (SM64ROM.getByte(F5 - 0x10) == 0xF3) SM64ROM.WriteEightBytes(F5 - 0x10, 0xF300000007000000 | (uint)(texelcount << 12) | linesperword);
                     SM64ROM.WriteTwoBytes(F5 + 1, (ushort)((SM64ROM.ReadTwoBytes(F5CMDs[i] + 1) & 0xFC00) | ((width * selectedbitsize / 64) << 1)));
                     Textures.RGBA32Check(TextureNumBox.SelectedIndex, selectedbitsize, width);
                 }
@@ -921,7 +921,7 @@ namespace SM64Paint
             uint segment = uint.Parse((string)SegmentList.SelectedItem, System.Globalization.NumberStyles.HexNumber);
             for (uint i = 0; i < LevelScripts.ObjectGeoOffsets[segment].Length; i++)
             {
-                ObjectList.Items.Add(i+1);
+                ObjectList.Items.Add(i + 1);
             }
             ObjectList.SelectedIndex = 0;
         }
@@ -955,7 +955,7 @@ namespace SM64Paint
         }
     }
 
-    
 
-    
+
+
 }

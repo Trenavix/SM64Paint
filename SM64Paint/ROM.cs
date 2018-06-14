@@ -20,13 +20,13 @@ public class ROM
     private byte[] ROMBackup;
 
     public ROM(byte[] newROM)
-	{
-       this.CurrentROM = newROM;
+    {
+        this.CurrentROM = newROM;
     }
 
     public void PerformBackup()
     {
-        ROMBackup = (byte[]) CurrentROM.Clone();
+        ROMBackup = (byte[])CurrentROM.Clone();
     }
 
     public void RecoverFromBackup(System.Drawing.Rectangle ClientRectangle, OpenTK.GLControl RenderPanel, ComboBox SelectedTexture)
@@ -35,20 +35,20 @@ public class ROM
         SelectedTexture.SelectedIndex = 0;
     }
 
-public byte[] getCurrentROM()
+    public byte[] getCurrentROM()
     {
         return CurrentROM;
     }
 
     public uint getEndROMAddr()
     {
-        return (uint)CurrentROM.Length-1;
+        return (uint)CurrentROM.Length - 1;
     }
 
     public UInt16 ReadTwoBytes(uint offset)
     {
         UInt16 value = getByte(offset);
-        for (uint i = offset; i < offset+2; i++)
+        for (uint i = offset; i < offset + 2; i++)
         {
             value = (UInt16)((value << 8) | CurrentROM[i]);
         }
@@ -71,7 +71,7 @@ public byte[] getCurrentROM()
     public UInt64 ReadEightBytes(uint offset)
     {
         UInt64 value = getByte(offset);
-        for (uint i = offset; i < offset+8; i++)
+        for (uint i = offset; i < offset + 8; i++)
         {
             value = (value << 8) | CurrentROM[i];
         }
@@ -82,7 +82,7 @@ public byte[] getCurrentROM()
         byte[] currentbyte = BitConverter.GetBytes(bytes);
         for (uint i = offset; i > offset - 4; i--)
         {
-            CurrentROM[i+3] = currentbyte[offset-i];
+            CurrentROM[i + 3] = currentbyte[offset - i];
         }
     }
     public void WriteTwoBytes(uint offset, UInt16 bytes)
@@ -90,7 +90,7 @@ public byte[] getCurrentROM()
         byte[] currentbyte = BitConverter.GetBytes(bytes);
         for (uint i = offset; i > offset - 2; i--)
         {
-            CurrentROM[i+1] = currentbyte[offset-i];
+            CurrentROM[i + 1] = currentbyte[offset - i];
         }
     }
     public void WriteEightBytes(uint offset, UInt64 bytes)
@@ -98,7 +98,7 @@ public byte[] getCurrentROM()
         byte[] currentbyte = BitConverter.GetBytes(bytes);
         for (uint i = offset; i > offset - 8; i--)
         {
-            CurrentROM[i+7] = currentbyte[offset-i];
+            CurrentROM[i + 7] = currentbyte[offset - i];
         }
     }
     public byte getByte(uint offset)
@@ -109,7 +109,7 @@ public byte[] getCurrentROM()
     {
         if (offset > getEndROMAddr())
         {
-            Array.Resize(ref CurrentROM, (int)offset+1);
+            Array.Resize(ref CurrentROM, (int)offset + 1);
         }
         CurrentROM[offset] = newbyte;
     }
@@ -118,11 +118,11 @@ public byte[] getCurrentROM()
         byte[] tempbuffer = new byte[size];
         for (uint i = 0; i < size; i++)
         {
-            tempbuffer[i] = CurrentROM[srcAddr+i];
+            tempbuffer[i] = CurrentROM[srcAddr + i];
         }
         for (uint i = 0; i < size; i++)
         {
-            changeByte(destAddr+i, tempbuffer[i]);
+            changeByte(destAddr + i, tempbuffer[i]);
         }
     }
     public void cutBytes(uint srcAddr, uint destAddr, uint size)
@@ -150,9 +150,9 @@ public byte[] getCurrentROM()
     }
     public void writeByteArray(uint offset, byte[] array)
     {
-        for (uint i=0; i < array.Length; i++)
+        for (uint i = 0; i < array.Length; i++)
         {
-            changeByte(offset+i, array[i]);
+            changeByte(offset + i, array[i]);
         }
     }
     public void changeEndROMAddr(int newsize)

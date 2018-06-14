@@ -53,19 +53,19 @@ public struct Vertex
 
     public static Vertex getVertex(UInt32 Addr, ROM SM64ROM)
     {
-            Vertex NewVert = new Vertex
-            (
-            (short)SM64ROM.ReadTwoBytes(Addr),
-            (short)SM64ROM.ReadTwoBytes(Addr + 2),
-            (short)SM64ROM.ReadTwoBytes(Addr + 4),
-            (short)SM64ROM.ReadTwoBytes(Addr + 8),
-            (short)SM64ROM.ReadTwoBytes(Addr + 10),
-            SM64ROM.getByte(Addr + 12),
-            SM64ROM.getByte(Addr + 13),
-            SM64ROM.getByte(Addr + 14),
-            SM64ROM.getByte(Addr + 15),
-            Addr
-            );
+        Vertex NewVert = new Vertex
+        (
+        (short)SM64ROM.ReadTwoBytes(Addr),
+        (short)SM64ROM.ReadTwoBytes(Addr + 2),
+        (short)SM64ROM.ReadTwoBytes(Addr + 4),
+        (short)SM64ROM.ReadTwoBytes(Addr + 8),
+        (short)SM64ROM.ReadTwoBytes(Addr + 10),
+        SM64ROM.getByte(Addr + 12),
+        SM64ROM.getByte(Addr + 13),
+        SM64ROM.getByte(Addr + 14),
+        SM64ROM.getByte(Addr + 15),
+        Addr
+        );
         if (Textures.FirstTexLoad)
         {
             Array.Resize(ref CurrentVertexList, CurrentVertexList.Length + 1);
@@ -86,7 +86,7 @@ public struct Vertex
 
     public Vector2 getUVVector()
     {
-        return new Vector2((float)U / (0x20) / Textures.S_Scale *U_Scale, (float)V / (0x20) / Textures.T_Scale*V_Scale);
+        return new Vector2((float)U / (0x20) / Textures.S_Scale * U_Scale, (float)V / (0x20) / Textures.T_Scale * V_Scale);
     }
 
     public Vector4 getRGBAVector()

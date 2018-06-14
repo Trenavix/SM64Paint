@@ -32,7 +32,7 @@ public class ROMManager
         }
         InitialiseModelLoad(ClientRectangle, RenderPanel, Width, Height);
     }
-    
+
     public static void SetVertRGBA(uint Addr, UInt32 colour, bool AlphaOnly)
     {
         byte alpha = (byte)(colour & 0xFF);
@@ -40,25 +40,25 @@ public class ROMManager
         else SM64ROM.WriteFourBytes(Addr + 12, colour);
         if (debug)
         {
-            if(AlphaOnly) Console.Write("Wrote 0x" + alpha.ToString("x2") + " to ROM addr 0x" + Addr.ToString("x8") + " (Vertex RGBA)\n");
+            if (AlphaOnly) Console.Write("Wrote 0x" + alpha.ToString("x2") + " to ROM addr 0x" + Addr.ToString("x8") + " (Vertex RGBA)\n");
             else Console.Write("Wrote 0x" + alpha.ToString("x2") + " to ROM addr 0x" + Addr.ToString("x8") + " (Vertex RGBA)\n");
-        } 
+        }
     }
 
     public static void SetVertAlpha(uint Addr, byte alpha)
     {
         SM64ROM.changeByte(Addr + 15, alpha);
-        if (debug)Console.Write("Wrote 0x" + alpha.ToString("x2") + " to ROM addr 0x" + Addr.ToString("x8")+" (Vertex Alpha)\n");
+        if (debug) Console.Write("Wrote 0x" + alpha.ToString("x2") + " to ROM addr 0x" + Addr.ToString("x8") + " (Vertex Alpha)\n");
     }
 
     public static void ForceVertRGBA(bool Opaque)
     {
         int addresscount;
-        if(Opaque) addresscount = GeoLayouts.OpaqueModels.Length;
+        if (Opaque) addresscount = GeoLayouts.OpaqueModels.Length;
         else addresscount = GeoLayouts.AlphaModels.Length;
         for (int i = 0; i < addresscount; i++)
         {
-            if(Opaque)ForceVertRGBAJump(GeoLayouts.OpaqueModels[i], true);
+            if (Opaque) ForceVertRGBAJump(GeoLayouts.OpaqueModels[i], true);
             else ForceVertRGBAJump(GeoLayouts.AlphaModels[i], false);
             InitialiseModelLoad(Rectangle.Empty, new GLControl()); //init without rendering
             GeoLayouts.ParseGeoLayout(ROMManager.SM64ROM, LevelScripts.getGeoAddress(Renderer.LevelArea), false);
@@ -79,7 +79,7 @@ public class ROMManager
         }
         for (uint j = addr; j < SM64ROM.getEndROMAddr(); j += 8) //Stuff is changed here
         {
-            if (SM64ROM.getByte(j) == 0x03 && SM64ROM.getByte(j+1) == 0x86)
+            if (SM64ROM.getByte(j) == 0x03 && SM64ROM.getByte(j + 1) == 0x86)
             {
                 SM64ROM.WriteEightBytes(j, 0xB700000000020000);
                 SM64ROM.cutBytes(j, B8Addr - 8, 8);
@@ -126,7 +126,7 @@ public class ROMManager
                 if (SM64ROM.getByte(j) == 0xFC)
                 {
                     UInt64 setcombine = SM64ROM.ReadEightBytes(j);
-                    if (setcombine == 0xFC122E24FFFFFBFD ||setcombine == 0xFC121824FF33F238)
+                    if (setcombine == 0xFC122E24FFFFFBFD || setcombine == 0xFC121824FF33F238)
                         SM64ROM.WriteEightBytes(j, 0xFC121824FF33FFFF); //Fix combiner
                 }
                 else if (SM64ROM.getByte(j) == 0xB8) break;
