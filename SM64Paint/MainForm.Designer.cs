@@ -38,7 +38,6 @@
             this.EdgesOption = new System.Windows.Forms.ToolStripMenuItem();
             this.ViewNonRGBA = new System.Windows.Forms.ToolStripMenuItem();
             this.CullingOption = new System.Windows.Forms.ToolStripMenuItem();
-            this.SetAVGAlpha = new System.Windows.Forms.ToolStripMenuItem();
             this.ObjectModelEditor = new System.Windows.Forms.ToolStripMenuItem();
             this.helpToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.controlsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -49,6 +48,8 @@
             this.AreaComboBox = new System.Windows.Forms.ComboBox();
             this.AreaLabel = new System.Windows.Forms.Label();
             this.ControlPanel = new System.Windows.Forms.Panel();
+            this.groupBox1 = new System.Windows.Forms.GroupBox();
+            this.RemoveEnvColoursButton = new System.Windows.Forms.Button();
             this.LayersGroupBox = new System.Windows.Forms.GroupBox();
             this.Layer1To4Button = new System.Windows.Forms.Button();
             this.Layer4To5Button = new System.Windows.Forms.Button();
@@ -112,8 +113,10 @@
             this.ObjectList = new System.Windows.Forms.ComboBox();
             this.SegmentLabel = new System.Windows.Forms.Label();
             this.SegmentList = new System.Windows.Forms.ComboBox();
+            this.EnvColoursTip = new System.Windows.Forms.ToolTip(this.components);
             this.menuStrip1.SuspendLayout();
             this.ControlPanel.SuspendLayout();
+            this.groupBox1.SuspendLayout();
             this.LayersGroupBox.SuspendLayout();
             this.TexturesGroupBox.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.TexturePreview)).BeginInit();
@@ -196,7 +199,6 @@
             this.EdgesOption,
             this.ViewNonRGBA,
             this.CullingOption,
-            this.SetAVGAlpha,
             this.ObjectModelEditor});
             this.ViewMenu.ForeColor = System.Drawing.Color.Silver;
             this.ViewMenu.Name = "ViewMenu";
@@ -208,7 +210,7 @@
             // 
             this.EdgesOption.BackColor = System.Drawing.Color.Silver;
             this.EdgesOption.Name = "EdgesOption";
-            this.EdgesOption.Size = new System.Drawing.Size(184, 22);
+            this.EdgesOption.Size = new System.Drawing.Size(180, 22);
             this.EdgesOption.Text = "Edges";
             this.EdgesOption.Click += new System.EventHandler(this.EdgesOption_Click);
             // 
@@ -218,7 +220,7 @@
             this.ViewNonRGBA.Checked = true;
             this.ViewNonRGBA.CheckState = System.Windows.Forms.CheckState.Checked;
             this.ViewNonRGBA.Name = "ViewNonRGBA";
-            this.ViewNonRGBA.Size = new System.Drawing.Size(184, 22);
+            this.ViewNonRGBA.Size = new System.Drawing.Size(180, 22);
             this.ViewNonRGBA.Text = "Non-RGBA Models";
             this.ViewNonRGBA.Click += new System.EventHandler(this.nonRGBAModelsToolStripMenuItem_Click);
             // 
@@ -228,23 +230,15 @@
             this.CullingOption.Checked = true;
             this.CullingOption.CheckState = System.Windows.Forms.CheckState.Checked;
             this.CullingOption.Name = "CullingOption";
-            this.CullingOption.Size = new System.Drawing.Size(184, 22);
+            this.CullingOption.Size = new System.Drawing.Size(180, 22);
             this.CullingOption.Text = "Culling";
             this.CullingOption.Click += new System.EventHandler(this.CullingOptionClick);
-            // 
-            // SetAVGAlpha
-            // 
-            this.SetAVGAlpha.BackColor = System.Drawing.Color.Silver;
-            this.SetAVGAlpha.Name = "SetAVGAlpha";
-            this.SetAVGAlpha.Size = new System.Drawing.Size(184, 22);
-            this.SetAVGAlpha.Text = "Alpha Blend Average";
-            this.SetAVGAlpha.Click += new System.EventHandler(this.SetAVGAlpha_Click);
             // 
             // ObjectModelEditor
             // 
             this.ObjectModelEditor.BackColor = System.Drawing.Color.Silver;
             this.ObjectModelEditor.Name = "ObjectModelEditor";
-            this.ObjectModelEditor.Size = new System.Drawing.Size(184, 22);
+            this.ObjectModelEditor.Size = new System.Drawing.Size(180, 22);
             this.ObjectModelEditor.Text = "Object Model Editor";
             this.ObjectModelEditor.Visible = false;
             this.ObjectModelEditor.Click += new System.EventHandler(this.objectModelEditor_Click);
@@ -281,7 +275,7 @@
             this.RenderPanel.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
             this.RenderPanel.BackColor = System.Drawing.Color.Black;
             this.RenderPanel.Location = new System.Drawing.Point(0, 24);
-            this.RenderPanel.Margin = new System.Windows.Forms.Padding(6, 6, 6, 6);
+            this.RenderPanel.Margin = new System.Windows.Forms.Padding(6);
             this.RenderPanel.MaximumSize = new System.Drawing.Size(3840, 2160);
             this.RenderPanel.MinimumSize = new System.Drawing.Size(556, 390);
             this.RenderPanel.Name = "RenderPanel";
@@ -300,7 +294,7 @@
             this.LevelComboBox.ForeColor = System.Drawing.Color.Silver;
             this.LevelComboBox.FormattingEnabled = true;
             this.LevelComboBox.Location = new System.Drawing.Point(423, 2);
-            this.LevelComboBox.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.LevelComboBox.Margin = new System.Windows.Forms.Padding(2);
             this.LevelComboBox.Name = "LevelComboBox";
             this.LevelComboBox.Size = new System.Drawing.Size(199, 21);
             this.LevelComboBox.TabIndex = 5;
@@ -328,7 +322,7 @@
             this.AreaComboBox.ForeColor = System.Drawing.Color.Silver;
             this.AreaComboBox.FormattingEnabled = true;
             this.AreaComboBox.Location = new System.Drawing.Point(661, 2);
-            this.AreaComboBox.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.AreaComboBox.Margin = new System.Windows.Forms.Padding(2);
             this.AreaComboBox.Name = "AreaComboBox";
             this.AreaComboBox.Size = new System.Drawing.Size(32, 21);
             this.AreaComboBox.TabIndex = 7;
@@ -351,18 +345,42 @@
             // 
             this.ControlPanel.AutoScroll = true;
             this.ControlPanel.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(32)))), ((int)(((byte)(32)))), ((int)(((byte)(32)))));
+            this.ControlPanel.Controls.Add(this.groupBox1);
             this.ControlPanel.Controls.Add(this.LayersGroupBox);
             this.ControlPanel.Controls.Add(this.TexturesGroupBox);
             this.ControlPanel.Controls.Add(this.VertexRGBA);
             this.ControlPanel.Controls.Add(this.groupBoxForce);
             this.ControlPanel.Dock = System.Windows.Forms.DockStyle.Right;
             this.ControlPanel.Location = new System.Drawing.Point(528, 24);
-            this.ControlPanel.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.ControlPanel.Margin = new System.Windows.Forms.Padding(2);
             this.ControlPanel.Name = "ControlPanel";
             this.ControlPanel.Size = new System.Drawing.Size(175, 400);
             this.ControlPanel.TabIndex = 9;
             this.ControlPanel.Visible = false;
             this.ControlPanel.Paint += new System.Windows.Forms.PaintEventHandler(this.ControlPanel_Paint);
+            // 
+            // groupBox1
+            // 
+            this.groupBox1.Controls.Add(this.RemoveEnvColoursButton);
+            this.groupBox1.Font = new System.Drawing.Font("Microsoft Sans Serif", 7F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.groupBox1.ForeColor = System.Drawing.Color.Silver;
+            this.groupBox1.Location = new System.Drawing.Point(8, 331);
+            this.groupBox1.Name = "groupBox1";
+            this.groupBox1.Size = new System.Drawing.Size(147, 49);
+            this.groupBox1.TabIndex = 6;
+            this.groupBox1.TabStop = false;
+            this.groupBox1.Text = "Remove Env Colour";
+            // 
+            // RemoveEnvColoursButton
+            // 
+            this.RemoveEnvColoursButton.ForeColor = System.Drawing.Color.Black;
+            this.RemoveEnvColoursButton.Location = new System.Drawing.Point(10, 18);
+            this.RemoveEnvColoursButton.Name = "RemoveEnvColoursButton";
+            this.RemoveEnvColoursButton.Size = new System.Drawing.Size(128, 23);
+            this.RemoveEnvColoursButton.TabIndex = 0;
+            this.RemoveEnvColoursButton.Text = "Remove Env Colours";
+            this.RemoveEnvColoursButton.UseVisualStyleBackColor = true;
+            this.RemoveEnvColoursButton.Click += new System.EventHandler(this.RemoveEnvColoursButton_Click);
             // 
             // LayersGroupBox
             // 
@@ -370,10 +388,10 @@
             this.LayersGroupBox.Controls.Add(this.Layer4To5Button);
             this.LayersGroupBox.Font = new System.Drawing.Font("Microsoft Sans Serif", 7F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.LayersGroupBox.ForeColor = System.Drawing.Color.Silver;
-            this.LayersGroupBox.Location = new System.Drawing.Point(8, 467);
-            this.LayersGroupBox.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.LayersGroupBox.Location = new System.Drawing.Point(8, 285);
+            this.LayersGroupBox.Margin = new System.Windows.Forms.Padding(2);
             this.LayersGroupBox.Name = "LayersGroupBox";
-            this.LayersGroupBox.Padding = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.LayersGroupBox.Padding = new System.Windows.Forms.Padding(2);
             this.LayersGroupBox.Size = new System.Drawing.Size(146, 42);
             this.LayersGroupBox.TabIndex = 4;
             this.LayersGroupBox.TabStop = false;
@@ -384,7 +402,7 @@
             this.Layer1To4Button.Font = new System.Drawing.Font("Microsoft Sans Serif", 7F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.Layer1To4Button.ForeColor = System.Drawing.SystemColors.ControlText;
             this.Layer1To4Button.Location = new System.Drawing.Point(3, 16);
-            this.Layer1To4Button.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.Layer1To4Button.Margin = new System.Windows.Forms.Padding(2);
             this.Layer1To4Button.Name = "Layer1To4Button";
             this.Layer1To4Button.Size = new System.Drawing.Size(71, 19);
             this.Layer1To4Button.TabIndex = 1;
@@ -397,7 +415,7 @@
             this.Layer4To5Button.Font = new System.Drawing.Font("Microsoft Sans Serif", 7F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.Layer4To5Button.ForeColor = System.Drawing.SystemColors.ControlText;
             this.Layer4To5Button.Location = new System.Drawing.Point(72, 16);
-            this.Layer4To5Button.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.Layer4To5Button.Margin = new System.Windows.Forms.Padding(2);
             this.Layer4To5Button.Name = "Layer4To5Button";
             this.Layer4To5Button.Size = new System.Drawing.Size(71, 19);
             this.Layer4To5Button.TabIndex = 0;
@@ -419,7 +437,7 @@
             this.TexturesGroupBox.Controls.Add(this.TexturePreview);
             this.TexturesGroupBox.Controls.Add(this.TextureResLabel);
             this.TexturesGroupBox.ForeColor = System.Drawing.Color.Silver;
-            this.TexturesGroupBox.Location = new System.Drawing.Point(8, 289);
+            this.TexturesGroupBox.Location = new System.Drawing.Point(8, 386);
             this.TexturesGroupBox.Name = "TexturesGroupBox";
             this.TexturesGroupBox.Size = new System.Drawing.Size(146, 173);
             this.TexturesGroupBox.TabIndex = 5;
@@ -444,7 +462,7 @@
             this.CentreU.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.CentreU.ForeColor = System.Drawing.SystemColors.ControlText;
             this.CentreU.Location = new System.Drawing.Point(10, 146);
-            this.CentreU.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.CentreU.Margin = new System.Windows.Forms.Padding(2);
             this.CentreU.Name = "CentreU";
             this.CentreU.Size = new System.Drawing.Size(57, 19);
             this.CentreU.TabIndex = 1;
@@ -457,7 +475,7 @@
             this.CentreV.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.CentreV.ForeColor = System.Drawing.SystemColors.ControlText;
             this.CentreV.Location = new System.Drawing.Point(74, 146);
-            this.CentreV.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.CentreV.Margin = new System.Windows.Forms.Padding(2);
             this.CentreV.Name = "CentreV";
             this.CentreV.Size = new System.Drawing.Size(61, 19);
             this.CentreV.TabIndex = 0;
@@ -470,7 +488,7 @@
             this.ImportTexture.Font = new System.Drawing.Font("Microsoft Sans Serif", 6F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.ImportTexture.ForeColor = System.Drawing.Color.Black;
             this.ImportTexture.Location = new System.Drawing.Point(2, 119);
-            this.ImportTexture.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.ImportTexture.Margin = new System.Windows.Forms.Padding(2);
             this.ImportTexture.Name = "ImportTexture";
             this.ImportTexture.Size = new System.Drawing.Size(64, 21);
             this.ImportTexture.TabIndex = 6;
@@ -488,7 +506,7 @@
             "16bpp",
             "32bpp"});
             this.BitsizeBox.Location = new System.Drawing.Point(72, 95);
-            this.BitsizeBox.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.BitsizeBox.Margin = new System.Windows.Forms.Padding(2);
             this.BitsizeBox.Name = "BitsizeBox";
             this.BitsizeBox.Size = new System.Drawing.Size(69, 21);
             this.BitsizeBox.TabIndex = 5;
@@ -505,7 +523,7 @@
             "IA",
             "I"});
             this.TexFormatBox.Location = new System.Drawing.Point(72, 70);
-            this.TexFormatBox.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.TexFormatBox.Margin = new System.Windows.Forms.Padding(2);
             this.TexFormatBox.Name = "TexFormatBox";
             this.TexFormatBox.Size = new System.Drawing.Size(69, 21);
             this.TexFormatBox.TabIndex = 4;
@@ -592,9 +610,9 @@
             this.VertexRGBA.Controls.Add(this.BrightLabel);
             this.VertexRGBA.ForeColor = System.Drawing.Color.Silver;
             this.VertexRGBA.Location = new System.Drawing.Point(8, 1);
-            this.VertexRGBA.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.VertexRGBA.Margin = new System.Windows.Forms.Padding(2);
             this.VertexRGBA.Name = "VertexRGBA";
-            this.VertexRGBA.Padding = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.VertexRGBA.Padding = new System.Windows.Forms.Padding(2);
             this.VertexRGBA.Size = new System.Drawing.Size(145, 283);
             this.VertexRGBA.TabIndex = 4;
             this.VertexRGBA.TabStop = false;
@@ -619,7 +637,7 @@
             this.PalettePanel.Controls.Add(this.PaletteBox8);
             this.PalettePanel.Controls.Add(this.PaletteBox10);
             this.PalettePanel.Location = new System.Drawing.Point(7, 95);
-            this.PalettePanel.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.PalettePanel.Margin = new System.Windows.Forms.Padding(2);
             this.PalettePanel.Name = "PalettePanel";
             this.PalettePanel.Size = new System.Drawing.Size(133, 38);
             this.PalettePanel.TabIndex = 34;
@@ -817,7 +835,7 @@
             this.AlphaOnlyCheckbox.AutoSize = true;
             this.AlphaOnlyCheckbox.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.AlphaOnlyCheckbox.Location = new System.Drawing.Point(24, 264);
-            this.AlphaOnlyCheckbox.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.AlphaOnlyCheckbox.Margin = new System.Windows.Forms.Padding(2);
             this.AlphaOnlyCheckbox.Name = "AlphaOnlyCheckbox";
             this.AlphaOnlyCheckbox.RightToLeft = System.Windows.Forms.RightToLeft.No;
             this.AlphaOnlyCheckbox.Size = new System.Drawing.Size(107, 17);
@@ -896,7 +914,7 @@
             this.AlphaPalette.Cursor = System.Windows.Forms.Cursors.Cross;
             this.AlphaPalette.Image = ((System.Drawing.Image)(resources.GetObject("AlphaPalette.Image")));
             this.AlphaPalette.Location = new System.Drawing.Point(3, 75);
-            this.AlphaPalette.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.AlphaPalette.Margin = new System.Windows.Forms.Padding(2);
             this.AlphaPalette.Name = "AlphaPalette";
             this.AlphaPalette.Size = new System.Drawing.Size(140, 17);
             this.AlphaPalette.SizeMode = System.Windows.Forms.PictureBoxSizeMode.StretchImage;
@@ -908,7 +926,7 @@
             this.RGBPalette.Cursor = System.Windows.Forms.Cursors.Cross;
             this.RGBPalette.Image = ((System.Drawing.Image)(resources.GetObject("RGBPalette.Image")));
             this.RGBPalette.Location = new System.Drawing.Point(3, 15);
-            this.RGBPalette.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.RGBPalette.Margin = new System.Windows.Forms.Padding(2);
             this.RGBPalette.Name = "RGBPalette";
             this.RGBPalette.Size = new System.Drawing.Size(140, 54);
             this.RGBPalette.SizeMode = System.Windows.Forms.PictureBoxSizeMode.StretchImage;
@@ -920,7 +938,7 @@
             this.button2.Font = new System.Drawing.Font("Microsoft Sans Serif", 8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.button2.ForeColor = System.Drawing.SystemColors.ActiveCaptionText;
             this.button2.Location = new System.Drawing.Point(66, 226);
-            this.button2.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.button2.Margin = new System.Windows.Forms.Padding(2);
             this.button2.Name = "button2";
             this.button2.Size = new System.Drawing.Size(62, 34);
             this.button2.TabIndex = 8;
@@ -932,7 +950,7 @@
             // 
             this.AlphaNum.BackColor = System.Drawing.Color.DarkGray;
             this.AlphaNum.Location = new System.Drawing.Point(94, 199);
-            this.AlphaNum.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.AlphaNum.Margin = new System.Windows.Forms.Padding(2);
             this.AlphaNum.Maximum = new decimal(new int[] {
             255,
             0,
@@ -952,7 +970,7 @@
             // 
             this.BlueNum.BackColor = System.Drawing.Color.DarkGray;
             this.BlueNum.Location = new System.Drawing.Point(94, 183);
-            this.BlueNum.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.BlueNum.Margin = new System.Windows.Forms.Padding(2);
             this.BlueNum.Maximum = new decimal(new int[] {
             255,
             0,
@@ -972,7 +990,7 @@
             // 
             this.GreenNum.BackColor = System.Drawing.Color.DarkGray;
             this.GreenNum.Location = new System.Drawing.Point(94, 168);
-            this.GreenNum.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.GreenNum.Margin = new System.Windows.Forms.Padding(2);
             this.GreenNum.Maximum = new decimal(new int[] {
             255,
             0,
@@ -992,7 +1010,7 @@
             // 
             this.RedNum.BackColor = System.Drawing.Color.DarkGray;
             this.RedNum.Location = new System.Drawing.Point(94, 152);
-            this.RedNum.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.RedNum.Margin = new System.Windows.Forms.Padding(2);
             this.RedNum.Maximum = new decimal(new int[] {
             255,
             0,
@@ -1053,10 +1071,10 @@
             this.groupBoxForce.Controls.Add(this.ForceVertRGBAButton);
             this.groupBoxForce.Font = new System.Drawing.Font("Microsoft Sans Serif", 7F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.groupBoxForce.ForeColor = System.Drawing.Color.Silver;
-            this.groupBoxForce.Location = new System.Drawing.Point(9, 522);
-            this.groupBoxForce.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.groupBoxForce.Location = new System.Drawing.Point(9, 561);
+            this.groupBoxForce.Margin = new System.Windows.Forms.Padding(2);
             this.groupBoxForce.Name = "groupBoxForce";
-            this.groupBoxForce.Padding = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.groupBoxForce.Padding = new System.Windows.Forms.Padding(2);
             this.groupBoxForce.Size = new System.Drawing.Size(146, 62);
             this.groupBoxForce.TabIndex = 3;
             this.groupBoxForce.TabStop = false;
@@ -1067,7 +1085,7 @@
             this.ForceOpaqueRGBA.AutoSize = true;
             this.ForceOpaqueRGBA.Checked = true;
             this.ForceOpaqueRGBA.Location = new System.Drawing.Point(19, 19);
-            this.ForceOpaqueRGBA.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.ForceOpaqueRGBA.Margin = new System.Windows.Forms.Padding(2);
             this.ForceOpaqueRGBA.Name = "ForceOpaqueRGBA";
             this.ForceOpaqueRGBA.Size = new System.Drawing.Size(63, 17);
             this.ForceOpaqueRGBA.TabIndex = 1;
@@ -1079,7 +1097,7 @@
             // 
             this.ForceAlphaRGBA.AutoSize = true;
             this.ForceAlphaRGBA.Location = new System.Drawing.Point(19, 35);
-            this.ForceAlphaRGBA.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.ForceAlphaRGBA.Margin = new System.Windows.Forms.Padding(2);
             this.ForceAlphaRGBA.Name = "ForceAlphaRGBA";
             this.ForceAlphaRGBA.Size = new System.Drawing.Size(52, 17);
             this.ForceAlphaRGBA.TabIndex = 2;
@@ -1091,7 +1109,7 @@
             this.ForceVertRGBAButton.Font = new System.Drawing.Font("Microsoft Sans Serif", 7F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.ForceVertRGBAButton.ForeColor = System.Drawing.SystemColors.ControlText;
             this.ForceVertRGBAButton.Location = new System.Drawing.Point(81, 15);
-            this.ForceVertRGBAButton.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.ForceVertRGBAButton.Margin = new System.Windows.Forms.Padding(2);
             this.ForceVertRGBAButton.Name = "ForceVertRGBAButton";
             this.ForceVertRGBAButton.Size = new System.Drawing.Size(46, 34);
             this.ForceVertRGBAButton.TabIndex = 0;
@@ -1108,7 +1126,7 @@
             // 
             // statusStrip1
             // 
-            this.statusStrip1.BackColor = System.Drawing.SystemColors.Control;
+            this.statusStrip1.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(32)))), ((int)(((byte)(32)))), ((int)(((byte)(32)))));
             this.statusStrip1.ImageScalingSize = new System.Drawing.Size(28, 28);
             this.statusStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.StatusLabel});
@@ -1179,6 +1197,10 @@
             this.SegmentList.Visible = false;
             this.SegmentList.SelectedIndexChanged += new System.EventHandler(this.SegmentList_SelectedIndexChanged);
             // 
+            // EnvColoursTip
+            // 
+            this.EnvColoursTip.Popup += new System.Windows.Forms.PopupEventHandler(this.EnvColoursTip_Popup);
+            // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -1197,14 +1219,16 @@
             this.Controls.Add(this.RenderPanel);
             this.Controls.Add(this.statusStrip1);
             this.Controls.Add(this.menuStrip1);
+            this.ForeColor = System.Drawing.Color.White;
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.MainMenuStrip = this.menuStrip1;
-            this.MinimumSize = new System.Drawing.Size(701, 427);
+            this.MinimumSize = new System.Drawing.Size(690, 462);
             this.Name = "MainForm";
-            this.Text = "SM64Paint";
+            this.Text = "SM64Paint 0.3.6";
             this.menuStrip1.ResumeLayout(false);
             this.menuStrip1.PerformLayout();
             this.ControlPanel.ResumeLayout(false);
+            this.groupBox1.ResumeLayout(false);
             this.LayersGroupBox.ResumeLayout(false);
             this.TexturesGroupBox.ResumeLayout(false);
             this.TexturesGroupBox.PerformLayout();
@@ -1328,8 +1352,10 @@
         private System.Windows.Forms.CheckBox FlipYCheckBox;
         private System.Windows.Forms.ToolStripMenuItem CullingOption;
         private System.Windows.Forms.ToolStripMenuItem ObjectModelEditor;
-        private System.Windows.Forms.ToolStripMenuItem SetAVGAlpha;
         private System.Windows.Forms.Panel PalettePanel;
+        private System.Windows.Forms.GroupBox groupBox1;
+        private System.Windows.Forms.Button RemoveEnvColoursButton;
+        private System.Windows.Forms.ToolTip EnvColoursTip;
     }
 }
 

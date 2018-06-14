@@ -28,6 +28,7 @@ public class F3D
     public static bool RenderEdges = false;
     public static bool Culling = true;
     public static String[] DebugText;
+    public static UInt32 GeoMode = 0; 
 
     public static void ParseF3DDL(ROM SM64ROM, uint SegOffset, bool ColourBuffer)
     {
@@ -64,7 +65,7 @@ public class F3D
         for (uint i = 0; i < SM64ROM.getEndROMAddr(); i++)
         {
             byte[] CMD = DisplayList[i];
-            if (Textures.FirstTexLoad && LevelScripts.DebugTXT) //Debug Txt
+            if (Textures.FirstTexLoad && ROMManager.debug) //Debug Txt
             {
                 Array.Resize(ref DebugText, DebugText.Length + 1);
                 DebugText[DebugText.Length - 1] = (Offset + (i * 8)).ToString("x") + ": "; //Addr: 
@@ -75,12 +76,10 @@ public class F3D
             } 
             if (!ColourBuffer) switch (DisplayList[i][0])
             {
-                case 0x01:
+                case 0x01: //G_MTX
                     break;
-                case 0x03:
+                case 0x03: //movemem
                     if (RenderEdges) break;
-                    EnableShading();
-                    LightingEnabled = true;
                     if (CMD[1] == 0x86)
                     {
                         float[] light0_diffuse = new float[4];
@@ -105,7 +104,7 @@ public class F3D
                     }
                     GL.Enable(EnableCap.ColorMaterial);
                     break;
-                case 0x04:
+                case 0x04: //G_VTX
                     UInt32 VTXStart = SM64ROM.readSegmentAddr(returnSegmentAddr(CMD));
                     short numVerts = (short)((CMD[1] >> 4) + 1);
                     int bufferIndex = CMD[1] & 0x0F;
@@ -115,45 +114,38 @@ public class F3D
                     }
                     Renderer.VertexCount += (uint)numVerts;
                     break;
-                case 0x06:
+                case 0x06: //LoadDL (jump)
                     F3D.DecodeF3DCommands(SM64ROM, returnSegmentAddr(CMD), ColourBuffer);
                     if (CMD[1] == 1) return;
                     break;
                 case 0xB1:
-                    /*GL.Begin(BeginMode.Triangles); //0xB1 is not used in F3D v1.0
-                    for (int j = 1; j < 8; j++)
-                    {
-                        if (j == 4) j++;
-                        int VertIndex = CMD[j] / 2;
-                        GL.TexCoord2(VTXBuffer[VertIndex].getUVVector());
-                        GL.Color4(VTXBuffer[VertIndex].getRGBAColor());
-                        GL.Vertex3(VTXBuffer[VertIndex].getCoordVector());
-                    }
-                    Renderer.TriCount += 2;
-                    GL.End();*/
+                    //0xB1 (TRI2) is not used in F3D v1.0
                     break;
-                case 0xB2:
+                case 0xB2: // Unused in F3D v1.0
                     break;
-                case 0xB3:
+                case 0xB3: //G_RDP_Half2
                     break;
-                case 0xB4:
+                case 0xB4: //G_RDP_Half1 
                     break;
-                case 0xB5:
+                case 0xB5: //G_Quad (Unused in F3D v1.0)
                     break;
-                case 0xB6:
-                case 0xB7:    
+                case 0xB6: //ClearGeoMode
                     if (RenderEdges) break;
-                    if (CMD[6] >> 4 == 2 || !Culling) { GL.Disable(EnableCap.CullFace); }
-                    else if (CMD[6] >> 4 == 0) { GL.Enable(EnableCap.CullFace); GL.CullFace(CullFaceMode.Back); }
-                    else if (CMD[6] >> 4 == 1) { GL.Enable(EnableCap.CullFace); GL.CullFace(CullFaceMode.Front); }
-                    if ((CMD[5] & 0x0F) == 2) { GL.Disable(EnableCap.Lighting); LightingEnabled = false; }
-                    else { EnableShading(); LightingEnabled = true; }
+                    UInt32 ClearBits = (UInt32)((CMD[4] << 24) | (CMD[5] << 16) | (CMD[6] << 8) | CMD[7]);
+                    GeoMode &= ~ClearBits;
+                    SetGeoMode(ColourBuffer);
                     break;
-                case 0xB9:
+                case 0xB7: //SetGeoMode   
+                    if (RenderEdges) break;
+                    UInt32 SetBits = (UInt32)((CMD[4] << 24) | (CMD[5] << 16) | (CMD[6] << 8) | CMD[7]);
+                    GeoMode |= SetBits;
+                    SetGeoMode(ColourBuffer);
                     break;
-                case 0xBA:
+                case 0xB9: //SetOtherMode
                     break;
-                case 0xBB:
+                case 0xBA: //SetOtherMode
+                    break;
+                case 0xBB: //G_Texture
                     Vertex.U_Scale = Convert.ToSingle((CMD[4] << 8) | CMD[5]) / Convert.ToSingle(0xFFFF);
                     Vertex.V_Scale = Convert.ToSingle((CMD[6] << 8) | CMD[7]) / Convert.ToSingle(0xFFFF);
                     if (CMD[3] == 0x01 && Renderer.TextureEnabler && !RenderEdges) { GL.Enable(EnableCap.Texture2D); }
@@ -168,9 +160,9 @@ public class F3D
                         Textures.T_Scale = 1f; Textures.S_Scale = 1f;//Revert mipmapping for now
                     }
                     break;
-                case 0xBC:
+                case 0xBC: //moveword
                     break;
-                case 0xBD:
+                case 0xBD: //PopMTX
                     break;
                 case 0xBF: //TRI1
                     if (LightingEnabled && !Renderer.ViewNonRGBA) break;
@@ -179,8 +171,21 @@ public class F3D
                     {
                         int VertIndex = CMD[j] / 0x0A;
                         if (!EnvMapping) GL.TexCoord2(VTXBuffer[VertIndex].getUVVector());
-                        
-                        if (LightingEnabled) GL.Normal3(VTXBuffer[VertIndex].getRGBColor()); //Normals
+
+                            if (LightingEnabled) //Normals
+                            {
+                                Vector3 normals = new Vector3(VTXBuffer[VertIndex].getRGBColor());
+                                if (!EnvMapping) { GL.Normal3(Vector3.Normalize(normals)); }
+                                else
+                                {
+                                    Vector4 normals4 = new Vector4(normals, 1f);
+                                    normals4 = Vector4.Normalize(Renderer.projection * normals4);
+                                    Vector3 newnorms = new Vector3(normals4.X, normals4.Y, normals4.Z);
+                                    GL.Normal3(newnorms);
+                                }
+                            }
+
+                            
                         else GL.Color4(VTXBuffer[VertIndex].getRGBAColor()); //RGBA
                         if (RenderEdges) GL.Color4(0, 0, 0, 0xFF);
                         GL.Vertex3(VTXBuffer[VertIndex].getCoordVector());
@@ -188,19 +193,19 @@ public class F3D
                     if(!RenderEdges)Renderer.TriCount++;
                     GL.End();
                     break;
-                case 0xF0:
+                case 0xF0: //LoadTLUT
                     if (!Textures.FirstTexLoad) break;
                     CICount = (uint)((((CMD[5] << 4) + ((CMD[6] & 0xF0) >> 4)) >> 2) + 1);
                     Textures.currentPalette = Textures.LoadRGBA16TextureData(CICount, SM64ROM);
                     break;
-                case 0xF2:
+                case 0xF2: //Settilesize
                     Textures.S_Scale = Convert.ToSingle((((CMD[5] << 4)| ((CMD[6] &0xF0) >> 4)) >> 2) + 1);
                     Textures.T_Scale = Convert.ToSingle(((((CMD[6] & 0x0F) << 8) | CMD[7]) >> 2) +1);
                     break;
-                case 0xF3:
+                case 0xF3: //LoadBlock
                     if(SM64ROM.getSegmentStart(0x0E) < 0x1200000 && !Renderer.ObjectView)TextureLoadRoutine(SM64ROM, 0);
                     break;
-                case 0xF5:
+                case 0xF5: //Settile
                     Textures.MODE = (byte)(CMD[1] >> 5);
                     Textures.BitSize = (byte)(4 * Math.Pow(2, ((CMD[1] >> 3) & 3)));
                     Textures.TFlags = (uint)(CMD[5] >> 2) & 3;
@@ -214,25 +219,28 @@ public class F3D
                     if(Textures.currentTexAddr == 0) break;
                     TextureLoadRoutine(SM64ROM, Offset + (uint)(i * 8));
                     break;
-                case 0xFB:
+                case 0xFB: //Set Env Colour
                     if (RenderEdges) break;
                     ColourCombiner = true;
                     GL.Color4((float)CMD[4]/255f, (float)CMD[5] / 255f, (float)CMD[6] / 255f, (float)CMD[7] / 255f);
                     break;
-                case 0xFD:
+                case 0xFC: //Setcombine
+                    if (CMD[7] == 0x3C && CMD[6] == 0x79 && CMD[5] == 0xFE) GL.Disable(EnableCap.Texture2D);
+                    else if(Renderer.TextureEnabler) GL.Enable(EnableCap.Texture2D);
+                    break;
+                case 0xFD: //SetTIMG
                     Textures.currentSegment = CMD[4];
                     Textures.currentTexAddr = SM64ROM.readSegmentAddr(returnSegmentAddr(CMD));
                     if (!Textures.FirstTexLoad) break;
                     Textures.BitSize = (byte)(4 * Math.Pow(2, ((CMD[1] >> 3) & 3)));
                     Textures.MODE = (byte)(CMD[1] >> 5);
                     break;
-                case 0xB8:
+                case 0xB8: //End DL
                     return;
             }
             else switch (DisplayList[i][0]) //Vertex Selection Colour buffer here
                 {
                     case 0x03:
-                        LightingEnabled = true;
                         break;
                     case 0x04:
                         UInt32 VTXStart = SM64ROM.readSegmentAddr(returnSegmentAddr(CMD));
@@ -249,15 +257,19 @@ public class F3D
                         if (CMD[1] == 1) return;
                         break;
                     case 0xB6:
+                        if (RenderEdges) break;
+                        UInt32 ClearBits = (UInt32)((CMD[4] << 24) | (CMD[5] << 16) | (CMD[6] << 8) | CMD[7]);
+                        GeoMode &= ~ClearBits;
+                        SetGeoMode(ColourBuffer);
+                        break;
                     case 0xB7:
-                        if (CMD[6] >> 4 == 2 || !Culling) { GL.Disable(EnableCap.CullFace); }
-                        else if (CMD[6] >> 4 == 0) { GL.Enable(EnableCap.CullFace); GL.CullFace(CullFaceMode.Back); }
-                        else if (CMD[6] >> 4 == 1) { GL.Enable(EnableCap.CullFace); GL.CullFace(CullFaceMode.Front); }
-                        if ((CMD[5] & 0x0F) == 2) LightingEnabled = false;
-                        else LightingEnabled = true;
+                        if (RenderEdges) break;
+                        UInt32 SetBits = (UInt32)((CMD[4] << 24) | (CMD[5] << 16) | (CMD[6] << 8) | CMD[7]);
+                        GeoMode |= SetBits;
+                        SetGeoMode(ColourBuffer);
                         break;
                     case 0xBF:
-                        //if (LightingEnabled) break;
+                        if (LightingEnabled) break; //Disable painting on non-RGBA meshes
                         Vertex[] Triangle = new Vertex[3];
                         Color4[] colour = new Color4[3];
                         for (int j = 5; j < 8; j++)
@@ -320,11 +332,12 @@ public class F3D
 
     private static void SetEnvironmentMapping()
     {
-        GL.TexGen(TextureCoordName.S, TextureGenParameter.TextureGenMode, (short)TextureGenMode.SphereMap);
-        GL.TexGen(TextureCoordName.T, TextureGenParameter.TextureGenMode, (short)TextureGenMode.SphereMap);
+        GL.TexGen(TextureCoordName.S, TextureGenParameter.TextureGenMode, (float)TextureGenMode.SphereMap);
+        GL.TexGen(TextureCoordName.T, TextureGenParameter.TextureGenMode, (float)TextureGenMode.SphereMap);
         GL.Enable(EnableCap.TextureGenS);
         GL.Enable(EnableCap.TextureGenT);
-        GL.TexEnv(TextureEnvTarget.TextureEnv, TextureEnvParameter.TextureEnvMode, (float)TextureEnvMode.Modulate);
+        EnvMapping = true;
+        //GL.TexEnv(TextureEnvTarget.TextureEnv, TextureEnvParameter.TextureEnvMode, (float)TextureEnvMode.Modulate);
     }
 
     private static void RemoveEnvMapping()
@@ -344,7 +357,7 @@ public class F3D
         return value;
     }
 
-    static void EnableShading()
+    static void EnableLighting()
     {
         if (!ColourCombiner) GL.Color4(1f, 1f, 1f, 1f);
         float[] light0_position = { Math.Abs(Renderer.cam.CamRotation.X), Math.Abs(Renderer.cam.CamRotation.Y), Math.Abs(Renderer.cam.CamRotation.Z), 0.0f };
@@ -353,6 +366,13 @@ public class F3D
         GL.Enable(EnableCap.Lighting);
         GL.Enable(EnableCap.Light0);
         GL.Enable(EnableCap.Normalize);
+        LightingEnabled = true;
+    }
+
+    static void DisableLighting()
+    {
+        GL.Disable(EnableCap.Lighting);
+        LightingEnabled = false;
     }
 
     static void TextureLoadRoutine(ROM SM64ROM, uint F5Command)
@@ -398,6 +418,62 @@ public class F3D
         }
         GL.BindTexture(TextureTarget.Texture2D, Textures.TextureArray[TextureIndex]);
     }
+
+    static void SetGeoMode(bool ColourBuffer)
+    {
+        byte CullMode = (byte)((GeoMode & 0x3000) >> 12);
+        if (!Culling) CullMode = 0;
+        GL.Enable(EnableCap.CullFace);
+        switch (CullMode)
+        {
+            case 0:
+                GL.Disable(EnableCap.CullFace);
+                break;
+            case 1:
+                GL.CullFace(CullFaceMode.Front);
+                break;
+            case 2:
+                GL.CullFace(CullFaceMode.Back);
+                break;
+            case 3:
+                GL.CullFace(CullFaceMode.FrontAndBack);
+                break;
+        }
+        if (ColourBuffer)
+        {
+            if ((GeoMode & 0x020000) >> 17 == 1) LightingEnabled = true;
+            else LightingEnabled = false;
+            return;
+        }
+        if (RenderEdges) return;
+        if ((GeoMode & 0x010000) >> 16 == 1) GL.Enable(EnableCap.Fog);
+        else GL.Disable(EnableCap.Fog);
+        if ((GeoMode & 0x020000) >> 17 == 1) EnableLighting();
+        else DisableLighting();
+        if ((GeoMode & 0x040000) >> 18 == 1) SetEnvironmentMapping();
+        else RemoveEnvMapping();
+        //if ((SetBits & 0x080000) >> 19 == 1) SetLinearTexMap();
+    }
+
+    static void ClearGeoMode(UInt32 ClearBits)
+    {
+        byte CullMode = (byte)((ClearBits & 0x3000) >> 12);
+        GL.Enable(EnableCap.CullFace);
+        switch (CullMode)
+        {
+            case 1:
+                GL.CullFace(CullFaceMode.Back);
+                break;
+            case 2:
+                GL.CullFace(CullFaceMode.Front);
+                break;
+            case 3:
+                GL.Disable(EnableCap.CullFace);
+                break;
+        }
+    }
 }
+
+
 
 

@@ -11,18 +11,31 @@
 
 using System;
 using System.IO;
+using System.Windows.Forms;
 
 public class ROM
 {
     private byte[] CurrentROM;
     private static uint[] Segments = new uint[0x1F]; //Max 0x1F RAM segments in ROM
+    private byte[] ROMBackup;
 
-	public ROM(byte[] newROM)
+    public ROM(byte[] newROM)
 	{
        this.CurrentROM = newROM;
     }
 
-    public byte[] getCurrentROM()
+    public void PerformBackup()
+    {
+        ROMBackup = (byte[]) CurrentROM.Clone();
+    }
+
+    public void RecoverFromBackup(System.Drawing.Rectangle ClientRectangle, OpenTK.GLControl RenderPanel, ComboBox SelectedTexture)
+    {
+        CurrentROM = ROMBackup;
+        SelectedTexture.SelectedIndex = 0;
+    }
+
+public byte[] getCurrentROM()
     {
         return CurrentROM;
     }

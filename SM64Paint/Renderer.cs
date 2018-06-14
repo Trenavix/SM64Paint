@@ -128,7 +128,7 @@ class Renderer
         //RenderPanel.SwapBuffers(); //We don't want people to see the vertex selection colour map so don't invalidate here!
     }
 
-    public static void EditVertex(Rectangle ClientRectangle, int Width, int Height, GLControl RenderPanel, Point pt, byte R, byte G, byte B, byte A)
+    public static void EditVertex(Rectangle ClientRectangle, int Width, int Height, GLControl RenderPanel, Point pt, byte R, byte G, byte B, byte A, bool AlphaOnly)
     {
             byte[] color = new byte[4];
             Renderer.RenderColourBuffer(ClientRectangle, Width, Height, RenderPanel);
@@ -149,32 +149,7 @@ class Renderer
                     Vertex.OriginalVertexMem[0][0] = new UInt32[2]; 
                     Vertex.OriginalVertexMem[0][0][0] = Addr + 12;
                     Vertex.OriginalVertexMem[0][0][1] = ROMManager.SM64ROM.ReadFourBytes(Addr + 12); //Initial RGBA
-                    ROMManager.SetVertRGBA(Vertex.CurrentVertexList[i], colour);
-                    break;
-                }
-            }
-    }
-
-    public static void EditVertexAlpha(Rectangle ClientRectangle, int Width, int Height, GLControl RenderPanel, Point pt, byte R, byte G, byte B, byte A)
-    {
-        byte[] color = new byte[4];
-        Renderer.RenderColourBuffer(ClientRectangle, Width, Height, RenderPanel);
-        GL.ReadPixels(pt.X, RenderPanel.Height - pt.Y - 1, 1, 1, OpenTK.Graphics.OpenGL.PixelFormat.Rgba, PixelType.UnsignedByte, color);
-        UInt32 Addr = (UInt32)((color[0] << 24) | (color[1] << 16) | (color[2] << 8) | color[3]);
-        if (Addr != 0) for (uint i = 0; i < Vertex.CurrentVertexList.Length; i++)
-            {
-                if (Addr == Vertex.CurrentVertexList[i])
-                {
-                    if (A == ROMManager.SM64ROM.getByte(Addr + 15)) return; //If it's the same, don't do anything
-                    for (uint j = 29; j >= 1 && j <= 29; j--) //Shift all mem back one
-                    {
-                        Vertex.OriginalVertexMem[j] = Vertex.OriginalVertexMem[j - 1];
-                    }
-                    Vertex.OriginalVertexMem[0] = new UInt32[1][]; //Set up new undo level with one combo
-                    Vertex.OriginalVertexMem[0][0] = new UInt32[2];
-                    Vertex.OriginalVertexMem[0][0][0] = Addr + 12;
-                    Vertex.OriginalVertexMem[0][0][1] = ROMManager.SM64ROM.ReadFourBytes(Addr + 12); //Initial RGBA
-                    ROMManager.SetVertAlpha(Vertex.CurrentVertexList[i], A);
+                    ROMManager.SetVertRGBA(Vertex.CurrentVertexList[i], colour, AlphaOnly);
                     break;
                 }
             }

@@ -10,12 +10,13 @@ This program is in an early beta stage and can currently:
 * Center UV texture coordinates if possible
 
 Upcoming plans:
-* Properly render environment mapping
+* Properly render environment mapping (Half-working as of 0.3.6)
 * Optimise renderer and improve GUI
 * CI8 and YUV16 texture importing 
 * Properly render light vectors in proportion to camera view
 * Export models as a collada file
-* Code in an object model editor
+* Stabilise object model editor
+* Add in a model-exporter (possibly dae or fbx)
 
 Renderer Screenshots:
 

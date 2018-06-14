@@ -47,14 +47,15 @@ public class Textures
     public static uint SFlags = 0;
     public static float S_Scale = 1;
     public static float T_Scale = 1;
+    public static bool ResizeFailure = false;
 
     public static int LoadTexture(ROM SM64ROM)
     {
         int CICount = currentPalette.Length;
         int NewTexture = 0;
-        if (MODE == CIMODE) { NewTexture = LoadCITexture(SM64ROM); }
-        else if (MODE == RGBAMODE && BitSize == 16) { NewTexture = LoadRGBA16Texture(SM64ROM); }
+        if (MODE == RGBAMODE && BitSize == 16) { NewTexture = LoadRGBA16Texture(SM64ROM); }
         else if (MODE == RGBAMODE && BitSize == 32) { NewTexture = LoadRGBA32Texture(SM64ROM); }
+        else if (MODE == CIMODE) { NewTexture = LoadCITexture(SM64ROM); }
         else if (MODE == IAMODE && BitSize == 4) { NewTexture = LoadIA4Texture(SM64ROM); }
         else if (MODE == IAMODE && BitSize == 8) { NewTexture = LoadIA8Texture(SM64ROM); }
         else if (MODE == IAMODE && BitSize == 16) { NewTexture = LoadIA16Texture(SM64ROM); }
@@ -147,33 +148,33 @@ public class Textures
         return id;
     }
 
-    public static int LoadIA4Texture(ROM SM64ROM) // TODO: USE 4 BITS PER CHANNEL.
+    public static int LoadIA4Texture(ROM SM64ROM) // TODO: USE 3 BITS I, 1 BIT A.
     {
         int id = GL.GenTexture();
         GL.BindTexture(TextureTarget.Texture2D, id);
-        byte[] TexData = SM64ROM.copyBytestoArray(currentTexAddr, (Width * Height) / 2);
-        byte[] TexData2 = new byte[TexData.Length * 2];
-        for (int i = 0; i < TexData.Length; i++)
+        byte[] IA4Data = SM64ROM.copyBytestoArray(currentTexAddr, (Width * Height) / 2);
+        short[] IA16Data = new short[IA4Data.Length * 2];
+        for (int i = 0; i < IA4Data.Length; i++)
         {
-            byte i1 = (byte)(((TexData[i] & 0xC0) >> 6) * 0xC7);
-            byte a1 = (byte)(((TexData[i] & 0x30) >> 4) * 0xC7);
-            byte i2 = (byte)(((TexData[i] & 0xC) >> 2) * 0xC7);
-            byte a2 = (byte)((TexData[i] & 0x3) * 0xC7);
-            TexData2[i * 2] = (byte)(i1 | a1);
-            TexData2[i * 2 + 1] = (byte)(i2 | a2);
+            byte i1 = (byte)((IA4Data[i] & 0xE0) | ((IA4Data[i] & 0xE0) >> 3) | (IA4Data[i] & 0xE0) >> 6);
+            byte a1 = (byte)(((IA4Data[i] & 0x10) >> 4) * 0xFF);
+            byte i2 = (byte)((((IA4Data[i] & 0x0E) << 4)) | ((IA4Data[i] & 0x0E) << 1) | ((IA4Data[i] & 0x0E) >> 2));
+            byte a2 = (byte)((IA4Data[i] & 1) * 0xFF);
+            IA16Data[i * 2] = (short)((i1 << 8) | a1);
+            IA16Data[i * 2 + 1] = (short)((i2 << 8) | a2);
         }
-
+        Int32[] RGBA32Data = IA16toRGBA32(IA16Data);
         GL.TexImage2D
             (
             TextureTarget.Texture2D,
             0,
-            PixelInternalFormat.Alpha,
+            PixelInternalFormat.Rgba32f,
             (int)Width,
             (int)Height,
             0,
-            OpenTK.Graphics.OpenGL.PixelFormat.Alpha,
-            PixelType.UnsignedByte,
-            TexData2
+            OpenTK.Graphics.OpenGL.PixelFormat.Rgba,
+            PixelType.UnsignedInt8888,
+            RGBA32Data
             );
         getTSFlags();
         getSTDTextureFilters();
@@ -185,22 +186,33 @@ public class Textures
         int id = GL.GenTexture();
         GL.BindTexture(TextureTarget.Texture2D, id);
         byte[] TexData = SM64ROM.copyBytestoArray(currentTexAddr, Width*Height);
-
+        short[] IA16Data = IA8toIA16(TexData);
+        Int32[] RGBA32 = IA16toRGBA32(IA16Data);
         GL.TexImage2D
             (
-            TextureTarget.Texture2D, 
-            0, 
-            PixelInternalFormat.Alpha,
+            TextureTarget.Texture2D,
+            0,
+            PixelInternalFormat.Rgba32f,
             (int)Width,
-            (int)Height, 
-            0, 
-            OpenTK.Graphics.OpenGL.PixelFormat.Alpha, 
-            PixelType.UnsignedByte, 
-            TexData
+            (int)Height,
+            0,
+            OpenTK.Graphics.OpenGL.PixelFormat.Rgba,
+            PixelType.UnsignedInt8888,
+            RGBA32
             );
         getTSFlags();
         getSTDTextureFilters();
         return id;
+    }
+
+    public static short[] IA8toIA16(byte[] IA8)
+    {
+        short[] IA16 = new short[IA8.Length];
+        for (uint i = 0; i < IA8.Length; i++)
+        {
+            IA16[i] = (Int16)(((((IA8[i] & 0xF0) >> 4) * 0x11) << 8) | (IA8[i] & 0x0F) * 0x11);
+        }
+        return IA16;
     }
 
     public static int LoadIA16Texture(ROM SM64ROM)
@@ -237,7 +249,7 @@ public class Textures
             (
             TextureTarget.Texture2D,
             0,
-            PixelInternalFormat.Intensity8,
+            PixelInternalFormat.Rgb8, //intensity8 is alpha is wanted
             (int)Width,
             (int)Height,
             0,
@@ -265,7 +277,7 @@ public class Textures
             (
             TextureTarget.Texture2D,
             0,
-            PixelInternalFormat.Intensity8,
+            PixelInternalFormat.Rgb8, //intensity8 is alpha is wanted
             (int)Width,
             (int)Height,
             0,
@@ -395,19 +407,21 @@ public class Textures
                 }
                 else if (format == IAMODE && bitsize == 4) //IA4
                 {
-                    byte I1 = (byte)(SM64ROM.getByte(pxaddr) & 0xC0);
-                    byte A1 = (byte)(SM64ROM.getByte(pxaddr) & 0x30);
+                    byte pixels = SM64ROM.getByte(pxaddr);
+                    byte I1 = (byte)((pixels & 0xE0) | ((pixels & 0xE0) >> 3) | (pixels & 0xE0) >> 6);
+                    byte A1 = (byte)(((pixels & 0x10) >> 4) * 0xFF);
                     brush = new SolidBrush(Color.FromArgb(A1, I1, I1, I1));
                     textureGraphics.FillRectangle(brush, x, y, 1, 1);
                     x++; if (x >= width) { x = 0; y++; } //increment
-                    byte I2 = (byte)(SM64ROM.getByte(pxaddr)& 0x0C);
-                    byte A2 = (byte)(SM64ROM.getByte(pxaddr) & 3);
-                    brush = new SolidBrush(Color.FromArgb(A1, I1, I1, I1));
+                    byte I2 = (byte)((((pixels & 0x0E) << 4)) | ((pixels & 0x0E) << 1) | ((pixels & 0x0E) >> 2));
+                    byte A2 = (byte)((pixels & 1) * 0xFF);
+                    brush = new SolidBrush(Color.FromArgb(A2, I2, I2, I2));
                 }
                 else if (format == IAMODE && bitsize == 8) //IA8
                 {
-                    byte I1 = (byte)(SM64ROM.getByte(pxaddr) >> 4);
-                    byte A1 = (byte)(SM64ROM.getByte(pxaddr) &0x0F);
+                    byte pixel = SM64ROM.getByte(pxaddr);
+                    byte I1 = (byte)((pixel & 0xF0) | ((pixel & 0xF0) >> 4));
+                    byte A1 = (byte)(((pixel & 0x0F) << 4) | (pixel & 0x0F));
                     brush = new SolidBrush(Color.FromArgb(A1, I1, I1, I1));
                 }
                 else if (format == IAMODE && bitsize == 16) //IA16
@@ -582,13 +596,13 @@ public class Textures
                     for (uint i = 0; i < bytetexels.Length; i++)
                     {
                         System.Drawing.Color texel = bmp.GetPixel(x, y);
-                        byte intensity1 = (byte)((byte)(((texel.R + texel.G + texel.B) / 3) >> 6) << 6);
-                        byte alpha1 = (byte)(((texel.A) >> 6) << 4);
+                        byte intensity1 = (byte)((byte)(((texel.R + texel.G + texel.B) / 3) >> 5) << 5);
+                        byte alpha1 = (byte)(((texel.A) >> 7) << 4);
                         byte ia1 = (byte)(intensity1 | alpha1);
                         x++; if (x >= bmp.Width) { x = 0; y++; }
                         System.Drawing.Color texel2 = bmp.GetPixel(x, y);
-                        byte intensity2 = (byte)((byte)(((texel2.R + texel2.G + texel2.B) / 3) >> 6) << 2);
-                        byte alpha2 = (byte)((texel2.A) >>6);
+                        byte intensity2 = (byte)((byte)(((texel2.R + texel2.G + texel2.B) / 3) >> 5) << 1);
+                        byte alpha2 = (byte)((texel2.A) >>7);
                         byte ia2 = (byte)(intensity2 | alpha2);
                         byte iaia = (byte)(ia1 | ia2);
                         bytetexels[i] = iaia;
@@ -688,9 +702,10 @@ public class Textures
         }
         
     }
-    public static void ResizeTexture(int F5index, int widthpower, int heightpower)
+    public static void ResizeTexture(int F5index, int widthpower, int heightpower, out bool isFailedToResize)
     {
         uint[] F5CMDs = Textures.F5CMDArray[F5index]; ROM SM64ROM = ROMManager.SM64ROM;
+        bool isFailedToResizeUVs = false;
         byte WidthsizeByte = SM64ROM.getByte(F5CMDs[0] + 7);
         ushort HeightsizeShort = SM64ROM.ReadTwoBytes(F5CMDs[0] + 5);
         int ogHeightPower = (HeightsizeShort >> 6 & 0x0F);
@@ -732,12 +747,18 @@ public class Textures
                             UVs[0][k - 5] = U;
                             UVs[1][k - 5] = V;
                         }
-                        UVs = Vertex.UVChecker(UVs);
+                        UVs = Vertex.UVChecker(UVs, out isFailedToResizeUVs);
+                        if (isFailedToResizeUVs)
+                        {
+                            isFailedToResize = true; // recover file
+                            return;
+                        }
                         for (uint k = 5; k < 8; k++)
                         {
                             UInt32 addr = Vertex.getAddrFromTriIndex(UVStart, SM64ROM.getByte(j+k));
                             if (UVs[0][k - 5] > 0x7fff || UVs[0][k - 5] < -0x8000)
                             {
+                                isFailedToResize = true;
                                 return;
                             }
                             SM64ROM.WriteTwoBytes(addr, (ushort)Convert.ToInt16(UVs[0][k-5]));
@@ -756,6 +777,8 @@ public class Textures
                 }
             }
         }
+        isFailedToResize = false;
+        return;
     }
 
     public static void CentreUVs(bool ChangeU, int F5index, int width, int height)
@@ -842,6 +865,7 @@ public class Textures
         }
         return colours;
     }
+
     public static byte[] getCIData(Bitmap bmp, Color[] colours)
     {
         byte[] CIData = new byte[bmp.Width * bmp.Height/2]; //CI4
@@ -854,14 +878,18 @@ public class Textures
                 System.Drawing.Color texel = bmp.GetPixel(x, y);
                 for (int z = 0; z < colours.Length; z++)
                 {
-                    if (colours[z].Equals(texel))
+                    if (colours.Length <= 16) if (colours[z].Equals(texel))
                     {
                         if (x % 2 == 0) CIData[byteidx] = (byte)(z << 4); //If even, shift to left nybble
                         else CIData[byteidx] |= (byte)z; //if odd..
+                        if (x % 2 != 0) byteidx++;
                         break;
                     }
+                    if (colours[z].Equals(texel))
+                    {
+                        CIData[y * bmp.Width + x] = (byte)z;
+                    }
                 }
-                if (x % 2 != 0) byteidx++;
             }
         }
         return CIData;
@@ -877,7 +905,7 @@ public class Textures
             {
                 SM64ROM.changeByte(F5CMDs[i] + 2, (byte)(width / 2)); // rgba32 special case: linesperword
             }
-            for (uint j = F5CMDs[i]; j > F5CMDs[i] - 0x50; j -= 8) //RGBA32 special case: different settile and loadblock
+            for (uint j = F5CMDs[i]; j > F5CMDs[i] - 0x30; j -= 8) //RGBA32 special case: different settile and loadblock
             {
                 switch (SM64ROM.getByte(j))
                 {
@@ -892,9 +920,44 @@ public class Textures
                         if (SM64ROM.getByte(j + 4) != 0x07) break; //if not settile, break
                         if (bitsize == 32) SM64ROM.changeByte(j + 1, 0x18);
                         else SM64ROM.changeByte(j + 1, 0x10);
+                        break;
+                    case 0xFD:
+                        if (bitsize == 32) SM64ROM.changeByte(j + 1, 0x18);
+                        else SM64ROM.changeByte(j + 1, 0x10);
                         return;
                 }
             }
         }
+    }
+    public static bool isTextureCI(int index)
+    {
+        UInt32 Addr = F5CMDArray[index][0];
+        if (ROMManager.SM64ROM.ReadFourBytes(Addr - 0x28) == 0x06000000) return true;
+        else return false;
+    }
+    public static void RevertCI(int index)
+    {
+        if (!isTextureCI(index)) return;
+        UInt32[] F5CMDs = F5CMDArray[index]; ROM SM64ROM = ROMManager.SM64ROM;
+        uint texaddr = 0;
+        for (uint i = 0; i < F5CMDs.Length; i++) //Update F5 scanline width 
+        {
+            uint F5 = F5CMDs[i];
+            if (SM64ROM.ReadFourBytes(F5 - 0x28) == 0x06000000)
+            {
+                UInt32 Jumpaddr = SM64ROM.getSegmentStart(0x0E) + (SM64ROM.ReadFourBytes(F5 - 0x24) & 0xFFFFFF);
+                texaddr = SM64ROM.ReadFourBytes(Jumpaddr + 0x2C);
+                UInt64 FDCMD = 0xFD10000000000000 | texaddr;
+                SM64ROM.WriteEightBytes(F5 - 0x28, FDCMD); //write FD cmd over 06 cmd
+                UInt32 NextF3CMD = ROMManager.findu32(F5, 0xF3000000, true);
+                if (NextF3CMD != 0 && SM64ROM.ReadFourBytes(NextF3CMD - 8) == 0x06000000) SM64ROM.WriteEightBytes(NextF3CMD-8, 0xE600000000000000);
+            }
+        }
+        byte WidthsizeByte = SM64ROM.getByte(F5CMDs[0] + 7);
+        ushort HeightsizeShort = SM64ROM.ReadTwoBytes(F5CMDs[0] + 5);
+        int ogHeightPower = (HeightsizeShort >> 6 & 0x0F);
+        int ogWidthPower = (WidthsizeByte >> 4);
+        if (ogWidthPower <= ogHeightPower) ResizeTexture(index, ogWidthPower+1, ogHeightPower, out bool isFailedtoResize); //double res x
+        else ResizeTexture(index, ogWidthPower, ogHeightPower+1, out bool isFailedToResize); //double res y
     }
 }

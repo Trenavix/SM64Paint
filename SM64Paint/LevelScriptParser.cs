@@ -33,7 +33,6 @@ public class LevelScripts
     static List<uint> LoadAddresses = new List<uint>();
     public static uint ExtCollisionPointer = 0; //Needed to repoint for extended roms
     public static uint Ext0EBankEnd = 0;
-    public static bool DebugTXT = false;
     public static String[] DebugScript;
 
     public static void ParseLevelScripts(ROM SM64ROM, UInt32 offset)
@@ -44,7 +43,7 @@ public class LevelScripts
         { ObjectGeoOffsets[i] = new uint[0]; }
         GeoLayoutOffsets = new uint[0];
         DecodeLevelScripts(SM64ROM, offset);
-        if (DebugTXT)
+        if (ROMManager.debug)
         {
             Array.Resize(ref DebugScript, DebugScript.Length + 1);
             DebugScript[DebugScript.Length - 1] = "";
@@ -57,7 +56,7 @@ public class LevelScripts
         for (UInt32 i = offset; i < SM64ROM.getEndROMAddr();)
         {
             uint increment = SM64ROM.getByte(i + 1);
-            if (DebugTXT)
+            if (ROMManager.debug)
             {
                 Array.Resize(ref DebugScript, DebugScript.Length + 1);
                 DebugScript[DebugScript.Length - 1] = i.ToString("x") + ": ";
@@ -117,7 +116,11 @@ public class LevelScripts
                     NewSegment = SM64ROM.getByte(i + 3);
                     NewSegAddr = SM64ROM.ReadFourBytes(i + 4);
                     SM64ROM.setSegment(NewSegment, NewSegAddr);
-                    if (NewSegment == 0x0E) Ext0EBankEnd = SM64ROM.ReadFourBytes(i + 8);
+                    if (NewSegment == 0x0E)
+                    {
+                        Ext0EBankEnd = SM64ROM.ReadFourBytes(i + 8);
+                        Console.Write("Segment 0x0E Location in ROM:\n0x"+SM64ROM.getSegmentStart(0x0E).ToString("x8"));
+                    } 
                     break;
                 case 0x18:
                     //MIO0 segment
@@ -196,7 +199,7 @@ public class LevelScripts
         List[14] = "Vanish Cap";
         List[15] = "Bowser Course 2";
         List[16] = "Secret Aquarium";
-        List[17] = "Bowser Course 2";
+        List[17] = "Bowser Course 3";
         List[18] = "Lethal Lava Land";
         List[19] = "Dire Dire Docks";
         List[20] = "Whomp's Fortress";

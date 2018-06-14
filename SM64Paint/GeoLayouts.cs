@@ -14,6 +14,7 @@ using System;
 using OpenTK.Input;
 using OpenTK.Graphics.OpenGL;
 using System.Drawing;
+using System.Linq;
 
 public class GeoLayouts
 {
@@ -25,15 +26,16 @@ public class GeoLayouts
     public static uint[] AlphaModels;
     public static uint ExtAlphaDLPointer = 0; //Needed to repoint in extended roms
     public static uint[][] ExtDLPointers;
-    public static bool AVGAlpha = false;
+    public static UInt32[] ModelsList;
 
     public static void ParseGeoLayout(ROM SM64ROM, uint offset, bool ColourBuffer)
     {
         if (SM64ROM == null) return;
+        ModelsList = new UInt32[0];
         if (Textures.FirstTexLoad)
         {
-            ExtDLPointers = new uint[7][];
-            for (int i = 0; i < 7; i++) ExtDLPointers[i] = new uint[0];
+            ExtDLPointers = new uint[8][];
+            for (int i = 0; i < 8; i++) ExtDLPointers[i] = new uint[0];
         } 
         OpaqueRendered = false;
         GL.DepthMask(true);
@@ -46,7 +48,7 @@ public class GeoLayouts
             int originalsize = LevelScripts.DebugScript.Length;
             Array.Resize(ref LevelScripts.DebugScript, LevelScripts.DebugScript.Length + F3D.DebugText.Length);
             Array.Copy(F3D.DebugText, 0, LevelScripts.DebugScript, originalsize, F3D.DebugText.Length);
-            if(LevelScripts.DebugTXT) System.IO.File.WriteAllLines(@"e:\SM64PaintDebug.txt", LevelScripts.DebugScript);
+            if(ROMManager.debug) System.IO.File.WriteAllLines(@"e:\SM64PaintDebug.txt", LevelScripts.DebugScript);
         }
         if (!ColourBuffer) Textures.FirstTexLoad = false;
     }
@@ -117,6 +119,8 @@ public class GeoLayouts
                     if (drawlayer <= 4 && GeoLayouts.OpaqueRendered) break;
                     segaddr = SM64ROM.ReadFourBytes(i + 8);
                     DecideBufferAndAddr(SM64ROM.getByte(i + 1), segaddr, ColourBuffer);
+                    if (F3D.Culling) F3D.GeoMode |= 0x022000; //Generate geomode for vector lighting and backface culling
+                    else F3D.GeoMode |= 0x020000; //If culling is off, only generate vector lighting
                     F3D.ParseF3DDL(SM64ROM, segaddr, ColourBuffer);
                     break;
                 case 0x14:
@@ -126,13 +130,18 @@ public class GeoLayouts
                 case 0x15:
                     //Load DL
                     increment = 8;
+                    segaddr = SM64ROM.ReadFourBytes(i + 4);
+                    if (ModelsList.Contains(segaddr)) break;
                     drawlayer = SM64ROM.getByte(i + 1);
                     if (drawlayer >= 4) ExtAlphaDLPointer = i;
                     if (drawlayer > 4 && !GeoLayouts.OpaqueRendered) break;
                     if (drawlayer <= 4 && GeoLayouts.OpaqueRendered) break;
-                    segaddr = SM64ROM.ReadFourBytes(i + 4);
                     DecideBufferAndAddr(SM64ROM.ReadEightBytes(i), segaddr, ColourBuffer);
+                    if(F3D.Culling) F3D.GeoMode |= 0x022000; //Generate geomode for vector lighting and backface culling
+                    else F3D.GeoMode |= 0x020000; //If culling is off, only generate vector lighting
                     F3D.ParseF3DDL(SM64ROM, segaddr, ColourBuffer);
+                    Array.Resize(ref ModelsList, ModelsList.Length + 1);
+                    ModelsList[ModelsList.Length - 1] = segaddr;
                     if (!Textures.FirstTexLoad) break;
                     Array.Resize(ref ExtDLPointers[drawlayer], ExtDLPointers[drawlayer].Length + 1); //Increase size by one to add
                     ExtDLPointers[drawlayer][ExtDLPointers[drawlayer].Length-1] = i; //set last index to addr
@@ -166,7 +175,7 @@ public class GeoLayouts
                     increment = 4;
                     break;
             }
-            if (Textures.FirstTexLoad && LevelScripts.DebugTXT) // Debug TXT
+            if (Textures.FirstTexLoad && ROMManager.debug) // Debug TXT
             {
                 Array.Resize(ref LevelScripts.DebugScript, LevelScripts.DebugScript.Length + 1);
                 LevelScripts.DebugScript[LevelScripts.DebugScript.Length - 1] = i.ToString("x") + ": ";
@@ -200,6 +209,7 @@ public class GeoLayouts
             GL.Disable(EnableCap.Light0);
             GL.Disable(EnableCap.Lighting);
             GL.Disable(EnableCap.AlphaTest);
+            GL.DepthMask(true);
             if (F3D.RenderEdges)
             {
                 GL.DepthRange(0.0001, 0.9999f);
@@ -216,7 +226,7 @@ public class GeoLayouts
         {
             GL.Enable(EnableCap.Blend);
             GL.BlendFunc(BlendingFactorSrc.SrcAlpha, BlendingFactorDest.OneMinusSrcAlpha);
-            if(!F3D.RenderEdges && AVGAlpha)GL.DepthMask(false);
+            GL.DepthMask(false); // don't write to depthbuffer when blending for SM64
         }
         else
         {
