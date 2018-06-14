@@ -644,9 +644,12 @@ namespace SM64Paint
 
         private void BitsizeBox_SelectedIndexChanged(object sender, EventArgs e)
         {
-            BitSizeCheck();
+            int oldBitSize = BitSizeCheck();
             if (Textures.FirstTexLoad || ROMManager.SM64ROM == null) return;
             ROM SM64ROM = ROMManager.SM64ROM;
+
+            SM64ROM.PerformBackup();
+
             UInt32[] F5CMDs = Textures.F5CMDArray[TextureNumBox.SelectedIndex];
             byte BitsizeByte = SM64ROM.getByte(F5CMDs[0] + 1);
             int BitsizePWR = ((BitsizeByte >> 3) & 0x03);
@@ -660,27 +663,41 @@ namespace SM64Paint
             ushort HeightsizeShort = SM64ROM.ReadTwoBytes(F5CMDs[0] + 5);
             int ogHeightPower = (HeightsizeShort >> 6 & 0x0F);
             int ogWidthPower = (WidthsizeByte >> 4);
+
+            bool isFailedToResize = false;
+
             if (dif < 0) //If bitsize is decreasing, size increases, so..
             {
-                if (ogWidthPower <= ogHeightPower) Textures.ResizeTexture(TextureNumBox.SelectedIndex, ogWidthPower - dif, ogHeightPower);
-                else Textures.ResizeTexture(TextureNumBox.SelectedIndex, ogWidthPower, ogHeightPower - dif);
+                if (ogWidthPower <= ogHeightPower) Textures.ResizeTexture(TextureNumBox.SelectedIndex, ogWidthPower - dif, ogHeightPower, out isFailedToResize);
+                else Textures.ResizeTexture(TextureNumBox.SelectedIndex, ogWidthPower, ogHeightPower - dif, out isFailedToResize);
             }
             else //Bitsize increasing, size decreasing, reverse proportion
             {
-                if (ogWidthPower >= ogHeightPower) Textures.ResizeTexture(TextureNumBox.SelectedIndex, ogWidthPower - dif, ogHeightPower);
-                else Textures.ResizeTexture(TextureNumBox.SelectedIndex, ogWidthPower, ogHeightPower - dif);
+                if (ogWidthPower >= ogHeightPower) Textures.ResizeTexture(TextureNumBox.SelectedIndex, ogWidthPower - dif, ogHeightPower, out isFailedToResize);
+                else Textures.ResizeTexture(TextureNumBox.SelectedIndex, ogWidthPower, ogHeightPower - dif, out isFailedToResize);
             }
+
+            if (isFailedToResize)
+            {
+                SM64ROM.RecoverFromBackup();
+                return;
+            }
+
             if (!WaitToRender)ROMManager.InitialiseModelLoad(ClientRectangle, RenderPanel, Width, Height);
             if (!WaitToRender) UpdateTextureNum();
         }
 
-        private void BitSizeCheck()
+        private int BitSizeCheck()
         {
+            int oldBitSize = BitsizeBox.SelectedIndex;
+
             if (TexFormatBox.SelectedIndex == 4 && BitsizeBox.SelectedIndex > 1) BitsizeBox.SelectedIndex = 1; //Prevent bitsize > 8bpp on I mode
             else if (TexFormatBox.SelectedIndex == 3 && BitsizeBox.SelectedIndex > 2) BitsizeBox.SelectedIndex = 2; //Prevent bitsize > 16bpp on IA mode
             else if (TexFormatBox.SelectedIndex == 0 && BitsizeBox.SelectedIndex < 2) BitsizeBox.SelectedIndex = 2; //Prevent bitsize < 16bpp on RGBA mode
             else if (TexFormatBox.SelectedIndex == 2 && BitsizeBox.SelectedIndex > 0) BitsizeBox.SelectedIndex = 0; //Prevent bitsize > 8bpp on CI mode (only 4bpp atm, update later)
             else if (TexFormatBox.SelectedIndex == 1 && BitsizeBox.SelectedIndex != 2) BitsizeBox.SelectedIndex = 2; //Prevent bitsize that's not 16bpp on YUV
+
+            return oldBitSize;
         }
 
         private void ImportTexture_Click(object sender, EventArgs e)
@@ -716,7 +733,7 @@ namespace SM64Paint
                 {
                     MessageBox.Show("Texture has too many colours for CI4.\nPlease reduce colour count to 16."); return;
                 }
-                Textures.ResizeTexture(index, Convert.ToInt32(widthpower), Convert.ToInt32(heightpower));
+                Textures.ResizeTexture(index, Convert.ToInt32(widthpower), Convert.ToInt32(heightpower), out bool isFailedToResize);
                 Textures.ImportBMPtoTexture(TextureBMP, index);
                 UInt32[] F5CMDs = Textures.F5CMDArray[TextureNumBox.SelectedIndex]; ROM SM64ROM = ROMManager.SM64ROM;
                 ROMManager.InitialiseModelLoad(ClientRectangle, RenderPanel, Width, Height);

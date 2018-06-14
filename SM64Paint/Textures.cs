@@ -688,9 +688,11 @@ public class Textures
         }
         
     }
-    public static void ResizeTexture(int F5index, int widthpower, int heightpower)
+    public static void ResizeTexture(int F5index, int widthpower, int heightpower, out bool isFailedToResize)
     {
         uint[] F5CMDs = Textures.F5CMDArray[F5index]; ROM SM64ROM = ROMManager.SM64ROM;
+        
+        bool isFailedToResizeUVs = false;
         byte WidthsizeByte = SM64ROM.getByte(F5CMDs[0] + 7);
         ushort HeightsizeShort = SM64ROM.ReadTwoBytes(F5CMDs[0] + 5);
         int ogHeightPower = (HeightsizeShort >> 6 & 0x0F);
@@ -732,12 +734,21 @@ public class Textures
                             UVs[0][k - 5] = U;
                             UVs[1][k - 5] = V;
                         }
-                        UVs = Vertex.UVChecker(UVs);
+                        UVs = Vertex.UVChecker(UVs, out isFailedToResizeUVs);
+
+                        if (isFailedToResizeUVs)
+                        {
+                            isFailedToResize = true;
+                            // recover file
+                            return;
+                        }
+
                         for (uint k = 5; k < 8; k++)
                         {
                             UInt32 addr = Vertex.getAddrFromTriIndex(UVStart, SM64ROM.getByte(j+k));
                             if (UVs[0][k - 5] > 0x7fff || UVs[0][k - 5] < -0x8000)
                             {
+                                isFailedToResize = true;
                                 return;
                             }
                             SM64ROM.WriteTwoBytes(addr, (ushort)Convert.ToInt16(UVs[0][k-5]));
@@ -756,6 +767,9 @@ public class Textures
                 }
             }
         }
+
+        isFailedToResize = false;
+        return;
     }
 
     public static void CentreUVs(bool ChangeU, int F5index, int width, int height)

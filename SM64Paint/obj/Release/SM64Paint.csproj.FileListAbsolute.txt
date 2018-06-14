@@ -1,0 +1,15 @@
+D:\SM64Paint\SM64Paint\obj\Release\SM64Paint.MainForm.resources
+D:\SM64Paint\SM64Paint\obj\Release\SM64Paint.Properties.Resources.resources
+D:\SM64Paint\SM64Paint\obj\Release\SM64Paint.csproj.GenerateResource.Cache
+D:\SM64Paint\SM64Paint\bin\Release\SM64Paint.exe.config
+D:\SM64Paint\SM64Paint\bin\Release\SM64Paint.exe.manifest
+D:\SM64Paint\SM64Paint\bin\Release\SM64Paint.application
+D:\SM64Paint\SM64Paint\bin\Release\SM64Paint.exe
+D:\SM64Paint\SM64Paint\bin\Release\SM64Paint.pdb
+D:\SM64Paint\SM64Paint\obj\Release\SM64Paint.csproj.CoreCompileInputs.cache
+D:\SM64Paint\SM64Paint\obj\Release\SM64Paint.TrustInfo.xml
+D:\SM64Paint\SM64Paint\obj\Release\SM64Paint.exe.manifest
+D:\SM64Paint\SM64Paint\obj\Release\SM64Paint.application
+D:\SM64Paint\SM64Paint\obj\Release\SM64Paint.exe
+D:\SM64Paint\SM64Paint\obj\Release\SM64Paint.pdb
+D:\SM64Paint\SM64Paint\obj\Release\SM64Paint.csprojResolveAssemblyReference.cache

@@ -127,22 +127,7 @@ public class ROMManager
 
     public static void AdjustCombiners()
     {
-        if (GeoLayouts.AlphaModels.Length < 1) return;
-        for (uint i = 0; i < GeoLayouts.AlphaModels.Length; i++)
-        {
-            uint addr = GeoLayouts.AlphaModels[i];
-            uint endaddr = 0;
-            for (uint j = addr; j < SM64ROM.getEndROMAddr(); j += 8)
-            {
-                if (SM64ROM.getByte(j) == 0xB8) { endaddr = j + 8; break; }
-            }
-            for (uint j = addr; j < SM64ROM.getEndROMAddr(); j += 8)
-            {
-                if (SM64ROM.getByte(j) == 0xFB) SM64ROM.WriteEightBytes(j, 0xE700000000000000); //Get rid of env colour combiners
-                else if (SM64ROM.getByte(j) == 0xFC && SM64ROM.ReadEightBytes(j) == 0xFC122E24FFFFFBFD) SM64ROM.WriteEightBytes(j, 0xFC121824FF33FFFF); //Fix combiner
-                else if (SM64ROM.getByte(j) == 0xB8) break;
-            }
-        }
+        // One duck cries when your transparency disappears
     }
 
     public static bool LevelHasLighting()

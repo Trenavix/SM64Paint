@@ -17,9 +17,21 @@ public class ROM
     private byte[] CurrentROM;
     private static uint[] Segments = new uint[0x1F]; //Max 0x1F RAM segments in ROM
 
-	public ROM(byte[] newROM)
-	{
-       this.CurrentROM = newROM;
+    private byte[] ROMBackup;
+
+    public ROM(byte[] newROM)
+    {
+        this.CurrentROM = newROM;
+    }
+
+    public void PerformBackup()
+    {
+        ROMBackup = (byte[])CurrentROM.Clone();
+    }
+
+    public void RecoverFromBackup()
+    {
+        CurrentROM = ROMBackup;
     }
 
     public byte[] getCurrentROM()
