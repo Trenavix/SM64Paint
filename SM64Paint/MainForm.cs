@@ -30,6 +30,7 @@ using System.Windows.Media;
 using System.Drawing.Drawing2D;
 using System.Runtime.InteropServices;
 using System.Drawing.Imaging;
+using static LevelScripts;
 
 namespace SM64Paint
 {
@@ -392,6 +393,13 @@ namespace SM64Paint
         private void LevelArea_SelectedIndexChange(object sender, EventArgs e)
         {
             LevelArea = (uint)AreaComboBox.SelectedIndex;
+            // handle area switching for rom manager roms
+            if (IsRomManager == true)
+            {
+                NewSegAddr = ROMManager.SM64ROM.ReadFourBytes((ROMManager.SM64ROM.getSegmentStart(0x19) + 0x5f00 + ((LevelArea + 1) * 0x10)));
+                ROMManager.SM64ROM.setSegment(0x0E, NewSegAddr);
+            }
+
             ROMManager.InitialiseModelLoad(ClientRectangle, RenderPanel, Width, Height);
             UpdateStatusText();
             if (ROMManager.SM64ROM.getSegmentStart(0x0E) < 0x1200000) { TexturesGroupBox.Visible = false; groupBoxForce.Visible = false; return; }
@@ -403,8 +411,8 @@ namespace SM64Paint
 
         private void ForceVertRGBAButton_Click(object sender, EventArgs e)
         {
-            DialogResult warningchoice = MessageBox.Show("Forcing VertRGBA should only be done on levels imported with SM64e and not modified. This is NOT safe and you" +
-                " should back up your ROM in case. Force VertRGBA?", "Warning!", MessageBoxButtons.YesNo);
+            DialogResult warningchoice = MessageBox.Show("Forcing VertRGBA should only be done on imported, unmodified levels. This is NOT safe." +
+                " Force VertRGBA?", "Warning!", MessageBoxButtons.YesNo);
             if (warningchoice == DialogResult.No) return;
             Cursor.Current = Cursors.WaitCursor;
             ROMManager.ForceVertRGBA(ForceOpaqueRGBA.Checked);
@@ -953,6 +961,7 @@ namespace SM64Paint
         {
 
         }
+
     }
 
 

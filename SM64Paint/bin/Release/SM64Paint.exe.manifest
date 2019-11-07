@@ -43,11 +43,6 @@
     </dependentAssembly>
   </dependency>
   <dependency>
-    <dependentAssembly dependencyType="preRequisite" allowDelayedBinding="true">
-      <assemblyIdentity name="Costura" version="1.6.2.0" publicKeyToken="9919EF960D84173D" language="neutral" processorArchitecture="msil" />
-    </dependentAssembly>
-  </dependency>
-  <dependency>
     <dependentAssembly dependencyType="install" allowDelayedBinding="true" codebase="OpenTK.dll" size="4350464">
       <assemblyIdentity name="OpenTK" version="3.0.0.0" publicKeyToken="BAD199FE84EB3DF4" language="neutral" processorArchitecture="msil" />
       <hash>
@@ -79,7 +74,19 @@
           <dsig:Transform Algorithm="urn:schemas-microsoft-com:HashTransforms.Identity" />
         </dsig:Transforms>
         <dsig:DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha256" />
-        <dsig:DigestValue>vZPjasMXkv68TRoByt4Y7mtrOydghRINVQoZcEtAWKg=</dsig:DigestValue>
+        <dsig:DigestValue>2tMryeEFsA4SQbnQrL2EHV4RRBssySVBoOKeDL0ORYc=</dsig:DigestValue>
+      </hash>
+    </dependentAssembly>
+  </dependency>
+  <dependency>
+    <dependentAssembly dependencyType="install" allowDelayedBinding="true" codebase="System.Numerics.Vectors.dll" size="111840">
+      <assemblyIdentity name="System.Numerics.Vectors" version="4.1.2.0" publicKeyToken="B03F5F7F11D50A3A" language="neutral" processorArchitecture="msil" />
+      <hash>
+        <dsig:Transforms>
+          <dsig:Transform Algorithm="urn:schemas-microsoft-com:HashTransforms.Identity" />
+        </dsig:Transforms>
+        <dsig:DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha256" />
+        <dsig:DigestValue>UjXJVE36lXU1cmAtvDXtYgj8FvJn3MzCBCZYP39RYys=</dsig:DigestValue>
       </hash>
     </dependentAssembly>
   </dependency>
@@ -95,31 +102,31 @@
       </hash>
     </dependentAssembly>
   </dependency>
-  <file name="FodyWeavers.xml" size="79" writeableType="applicationData">
+  <file name="FodyWeavers.xml" size="76" writeableType="applicationData">
     <hash>
       <dsig:Transforms>
         <dsig:Transform Algorithm="urn:schemas-microsoft-com:HashTransforms.Identity" />
       </dsig:Transforms>
       <dsig:DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha256" />
-      <dsig:DigestValue>lFAYmxLG65eytnbYLn0/dk+vpv16xwkPiK03L/lwoNw=</dsig:DigestValue>
+      <dsig:DigestValue>wjrBZ5Q8EcgFpLpjx1onK7OYm6aIy2ld4FvQ1vA7rAI=</dsig:DigestValue>
     </hash>
   </file>
-  <file name="GPL_License.txt" size="18383">
+  <file name="GPL_License.txt" size="18045">
     <hash>
       <dsig:Transforms>
         <dsig:Transform Algorithm="urn:schemas-microsoft-com:HashTransforms.Identity" />
       </dsig:Transforms>
       <dsig:DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha256" />
-      <dsig:DigestValue>iS0KI+fJbIT8FEXteSy6ZodBOGG20W1qmi4EgOu1IJI=</dsig:DigestValue>
+      <dsig:DigestValue>kLZkpvvIKzhZXLs5YGJovvCy65t2sOngOCa+/iBBkLs=</dsig:DigestValue>
     </hash>
   </file>
-  <file name="SM64Paint.exe.config" size="529">
+  <file name="SM64Paint.exe.config" size="515">
     <hash>
       <dsig:Transforms>
         <dsig:Transform Algorithm="urn:schemas-microsoft-com:HashTransforms.Identity" />
       </dsig:Transforms>
       <dsig:DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha256" />
-      <dsig:DigestValue>prnaO55BZVym1wIW4pOfYBabQtXofI5PmB/fxaEDJOU=</dsig:DigestValue>
+      <dsig:DigestValue>joWlNXSEaFxGvAdvTEPpYKtCK4vQ6m4WyA1vvc23Be4=</dsig:DigestValue>
     </hash>
   </file>
   <file name="SM64Paint.ico" size="140660">
