@@ -411,8 +411,8 @@ namespace SM64Paint
 
         private void ForceVertRGBAButton_Click(object sender, EventArgs e)
         {
-            DialogResult warningchoice = MessageBox.Show("Forcing VertRGBA should only be done on imported, unmodified levels. This is NOT safe." +
-                " Force VertRGBA?", "Warning!", MessageBoxButtons.YesNo);
+            DialogResult warningchoice = MessageBox.Show("Forcing VertRGBA should only be done on imported, unmodified levels. This is NOT safe and you" +
+                " should back up your ROM in case. Force VertRGBA?", "Warning!", MessageBoxButtons.YesNo);
             if (warningchoice == DialogResult.No) return;
             Cursor.Current = Cursors.WaitCursor;
             ROMManager.ForceVertRGBA(ForceOpaqueRGBA.Checked);
