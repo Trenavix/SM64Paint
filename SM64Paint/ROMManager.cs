@@ -13,6 +13,7 @@ using OpenTK;
 using System;
 using System.Drawing;
 using System.IO;
+using static LevelScripts;
 
 public class ROMManager
 {
@@ -79,7 +80,9 @@ public class ROMManager
         }
         for (uint j = addr; j < SM64ROM.getEndROMAddr(); j += 8) //Stuff is changed here
         {
-            if (SM64ROM.getByte(j) == 0x03 && SM64ROM.getByte(j + 1) == 0x86)
+            uint Shadefix = 0x86; // fixes forcergba in rom manager roms made with newer versions of rom manager
+			if (IsRomManager == true) { Shadefix = 0x88; }
+            if (SM64ROM.getByte(j) == 0x03 && SM64ROM.getByte(j + 1) == Shadefix)
             {
                 SM64ROM.WriteEightBytes(j, 0xB700000000020000);
                 SM64ROM.cutBytes(j, B8Addr - 8, 8);
