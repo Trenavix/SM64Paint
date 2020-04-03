@@ -115,7 +115,7 @@ public class F3D
                     Renderer.VertexCount += (uint)numVerts;
                     break;
                 case 0x06: //LoadDL (jump)
-                    F3D.DecodeF3DCommands(SM64ROM, returnSegmentAddr(CMD), ColourBuffer);
+                        F3D.DecodeF3DCommands(SM64ROM, returnSegmentAddr(CMD), ColourBuffer);
                     if (CMD[1] == 1) return;
                     break;
                 case 0xB1:

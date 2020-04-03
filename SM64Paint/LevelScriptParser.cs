@@ -81,7 +81,7 @@ public class LevelScripts
                         if ((NewSegEnd - NewSegAddr) < 0x6000) { IsRomManager = false; }
                         else { IsRomManager = true; }
                     }
-                    else { IsRomManager = false;  }
+                    //else { IsRomManager = false;  }
 
                     SM64ROM.setSegment(NewSegment, NewSegAddr);
                     //if (NewSegment != 0x0E) break;
@@ -126,7 +126,6 @@ public class LevelScripts
                     break;
                 case 0x17:
                     NewSegment = SM64ROM.getByte(i + 3);
-                    Console.WriteLine(IsRomManager);
                     if ((NewSegment == 0x0E) && (IsRomManager == true)) { NewSegAddr = SM64ROM.ReadFourBytes(SM64ROM.getSegmentStart(0x19) + 0x5f10); } // get rom seg ptrs for rom manager
                     else { NewSegAddr = SM64ROM.ReadFourBytes(i + 4); }
                     SM64ROM.setSegment(NewSegment, NewSegAddr);

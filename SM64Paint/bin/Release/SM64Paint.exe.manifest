@@ -4,7 +4,7 @@
   <description asmv2:iconFile="SM64Paint.ico" xmlns="urn:schemas-microsoft-com:asm.v1" />
   <application />
   <entryPoint>
-    <assemblyIdentity name="SM64Paint" version="0.3.6.0" language="neutral" processorArchitecture="amd64" />
+    <assemblyIdentity name="SM64Paint" version="0.3.7.1" language="neutral" processorArchitecture="amd64" />
     <commandLine file="SM64Paint.exe" parameters="" />
   </entryPoint>
   <trustInfo>
@@ -68,13 +68,13 @@
   </dependency>
   <dependency>
     <dependentAssembly dependencyType="install" allowDelayedBinding="true" codebase="SM64Paint.exe" size="1538048">
-      <assemblyIdentity name="SM64Paint" version="0.3.6.0" language="neutral" processorArchitecture="amd64" />
+      <assemblyIdentity name="SM64Paint" version="0.3.7.1" language="neutral" processorArchitecture="amd64" />
       <hash>
         <dsig:Transforms>
           <dsig:Transform Algorithm="urn:schemas-microsoft-com:HashTransforms.Identity" />
         </dsig:Transforms>
         <dsig:DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha256" />
-        <dsig:DigestValue>dl28ziShAfEktHckq4MipI1hzixHrCWKwCzYPvYTZDk=</dsig:DigestValue>
+        <dsig:DigestValue>+UOFAYyFDLF3kMtNTLyUxYgXOxRk9gBGdhs0N/eI0+0=</dsig:DigestValue>
       </hash>
     </dependentAssembly>
   </dependency>
