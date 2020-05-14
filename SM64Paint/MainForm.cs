@@ -118,7 +118,8 @@ namespace SM64Paint
                 "Space: Toggle Edges\n" +
                 "C+Left Click: Grab Colour from model\n" +
                 "(Shift+)Page-Up/Down: Change level(area)\n" +
-                "Alt+Enter or Esc: Toggle Fullscreen",
+                "Alt+Enter or Esc: Toggle Fullscreen\n"+
+                "Left Shift + Remove Env Colors button to also remove opaque env colors",
                 "Controls", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 
@@ -956,7 +957,7 @@ namespace SM64Paint
 
         private void RemoveEnvColoursButton_Click(object sender, EventArgs e)
         {
-            ROMManager.RemoveEnvColour();
+            ROMManager.RemoveEnvColour(keystate[Key.ShiftLeft]);
         }
 
         private void EnvColoursTip_Popup(object sender, PopupEventArgs e)
