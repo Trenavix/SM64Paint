@@ -1346,7 +1346,6 @@
         private System.Windows.Forms.GroupBox LayersGroupBox;
         private System.Windows.Forms.Button Layer1To4Button;
         private System.Windows.Forms.Button Layer4To5Button;
-        private System.Windows.Forms.CheckBox AlphaOnlyCheckbox;
         private System.Windows.Forms.Button CentreU;
         private System.Windows.Forms.Button CentreV;
         private System.Windows.Forms.CheckBox FlipYCheckBox;
@@ -1356,6 +1355,7 @@
         private System.Windows.Forms.GroupBox groupBox1;
         private System.Windows.Forms.Button RemoveEnvColoursButton;
         private System.Windows.Forms.ToolTip EnvColoursTip;
+        private System.Windows.Forms.CheckBox AlphaOnlyCheckbox;
     }
 }
 

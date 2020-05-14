@@ -30,7 +30,7 @@ using System.Windows.Media;
 using System.Drawing.Drawing2D;
 using System.Runtime.InteropServices;
 using System.Drawing.Imaging;
-using static LevelScripts;
+
 
 namespace SM64Paint
 {
@@ -46,6 +46,7 @@ namespace SM64Paint
         String currentROMPath;
         readonly String PaletteFile = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "SM64Paint_Palette.png");
         public readonly float MouseSensitivity = 0.005f;
+        public bool AlphaBox = false;
 
         public MainForm()
         {
@@ -72,6 +73,7 @@ namespace SM64Paint
             CompositionTarget.Rendering += CompositionTarget_Rendering;
             this.TexturePreview.ContextMenuStrip = this.RightClickTexture;
             FormClosing += new FormClosingEventHandler(MainForm_FormClosing);
+            
         }
 
 
@@ -394,10 +396,10 @@ namespace SM64Paint
         {
             LevelArea = (uint)AreaComboBox.SelectedIndex;
             // handle area switching for rom manager roms
-            if (IsRomManager == true)
+            if (LevelScripts.IsRomManager == true)
             {
-                NewSegAddr = ROMManager.SM64ROM.ReadFourBytes((ROMManager.SM64ROM.getSegmentStart(0x19) + 0x5f00 + ((LevelArea + 1) * 0x10)));
-                ROMManager.SM64ROM.setSegment(0x0E, NewSegAddr);
+                LevelScripts.NewSegAddr = ROMManager.SM64ROM.ReadFourBytes((ROMManager.SM64ROM.getSegmentStart(0x19) + 0x5f00 + ((LevelArea + 1) * 0x10)));
+                ROMManager.SM64ROM.setSegment(0x0E, LevelScripts.NewSegAddr);
             }
 
             ROMManager.InitialiseModelLoad(ClientRectangle, RenderPanel, Width, Height);
