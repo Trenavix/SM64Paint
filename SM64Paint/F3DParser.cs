@@ -115,7 +115,7 @@ public class F3D
                     Renderer.VertexCount += (uint)numVerts;
                     break;
                 case 0x06: //LoadDL (jump)
-                    F3D.DecodeF3DCommands(SM64ROM, returnSegmentAddr(CMD), ColourBuffer);
+                        F3D.DecodeF3DCommands(SM64ROM, returnSegmentAddr(CMD), ColourBuffer);
                     if (CMD[1] == 1) return;
                     break;
                 case 0xB1:
@@ -183,9 +183,13 @@ public class F3D
                                     Vector3 newnorms = new Vector3(normals4.X, normals4.Y, normals4.Z);
                                     GL.Normal3(newnorms);
                                 }
-                            }
+                                GL.Color4(1f, 1f, 1f, VTXBuffer[VertIndex].getRGBAColor().A);
 
+                            }
                             
+
+
+
                         else GL.Color4(VTXBuffer[VertIndex].getRGBAColor()); //RGBA
                         if (RenderEdges) GL.Color4(0, 0, 0, 0xFF);
                         GL.Vertex3(VTXBuffer[VertIndex].getCoordVector());
@@ -269,7 +273,7 @@ public class F3D
                         SetGeoMode(ColourBuffer);
                         break;
                     case 0xBF:
-                        if (LightingEnabled) break; //Disable painting on non-RGBA meshes
+                        if ( LightingEnabled && Renderer.AlphaOnlyBox == false ) break; //Disable color painting on non-RGBA meshes, allow alpha painting
                         Vertex[] Triangle = new Vertex[3];
                         Color4[] colour = new Color4[3];
                         for (int j = 5; j < 8; j++)

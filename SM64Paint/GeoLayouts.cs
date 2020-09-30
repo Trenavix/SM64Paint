@@ -115,8 +115,8 @@ public class GeoLayouts
                     increment = 12;
                     if (SM64ROM.getByte(i + 8) == 0) break;
                     drawlayer = SM64ROM.getByte(i + 1);
-                    if (drawlayer > 4 && !GeoLayouts.OpaqueRendered) break;
-                    if (drawlayer <= 4 && GeoLayouts.OpaqueRendered) break;
+                    if (drawlayer > (4 - Convert.ToInt32(LevelScripts.IsRomManager)) && !GeoLayouts.OpaqueRendered) break;
+                    if (drawlayer <= (4 - Convert.ToInt32(LevelScripts.IsRomManager)) && GeoLayouts.OpaqueRendered) break;
                     segaddr = SM64ROM.ReadFourBytes(i + 8);
                     DecideBufferAndAddr(SM64ROM.getByte(i + 1), segaddr, ColourBuffer);
                     if (F3D.Culling) F3D.GeoMode |= 0x022000; //Generate geomode for vector lighting and backface culling
@@ -133,9 +133,9 @@ public class GeoLayouts
                     segaddr = SM64ROM.ReadFourBytes(i + 4);
                     if (ModelsList.Contains(segaddr)) break;
                     drawlayer = SM64ROM.getByte(i + 1);
-                    if (drawlayer >= 4) ExtAlphaDLPointer = i;
-                    if (drawlayer > 4 && !GeoLayouts.OpaqueRendered) break;
-                    if (drawlayer <= 4 && GeoLayouts.OpaqueRendered) break;
+                    if (drawlayer >= (4 - Convert.ToInt32(LevelScripts.IsRomManager))) ExtAlphaDLPointer = i;
+                    if (drawlayer > (4 - Convert.ToInt32(LevelScripts.IsRomManager)) && !GeoLayouts.OpaqueRendered) break;
+                    if (drawlayer <= (4 - Convert.ToInt32(LevelScripts.IsRomManager)) && GeoLayouts.OpaqueRendered) break;
                     DecideBufferAndAddr(SM64ROM.ReadEightBytes(i), segaddr, ColourBuffer);
                     if(F3D.Culling) F3D.GeoMode |= 0x022000; //Generate geomode for vector lighting and backface culling
                     else F3D.GeoMode |= 0x020000; //If culling is off, only generate vector lighting
@@ -201,7 +201,7 @@ public class GeoLayouts
     private static void DecideBufferAndAddr(ulong CMD, uint segaddr, bool ColourBuffer)
     {
         byte layer = (byte)((CMD >> 48) & 0xFF);
-        if (layer == 2 || layer == 6) GL.DepthRange(0.0001, 0.9999f);
+        if (layer == 2 || layer == 6 || layer == 3) GL.DepthRange(0.0001, 0.9999f);
         else GL.DepthRange(0, 1f);
         if (ColourBuffer || F3D.RenderEdges)
         {
@@ -222,7 +222,8 @@ public class GeoLayouts
             GL.BlendFunc(BlendingFactorSrc.SrcAlpha, BlendingFactorDest.OneMinusSrcAlpha);
         }
         else GL.Disable(EnableCap.Blend);*/
-        if (layer > 4)
+
+        if (layer > 4 || LevelScripts.IsRomManager == true && layer == 3)
         {
             GL.Enable(EnableCap.Blend);
             GL.BlendFunc(BlendingFactorSrc.SrcAlpha, BlendingFactorDest.OneMinusSrcAlpha);
@@ -239,12 +240,12 @@ public class GeoLayouts
             GL.AlphaFunc(AlphaFunction.Greater, 0.0f);
         }
         else GL.Disable(EnableCap.AlphaTest);
-        if (drawlayer >= 4 && Textures.FirstTexLoad) //Add alpha or opaque model addresses to array
+        if (drawlayer >= (4 - Convert.ToInt32(LevelScripts.IsRomManager)) && Textures.FirstTexLoad) //Add alpha or opaque model addresses to array
         {
             Array.Resize(ref AlphaModels, AlphaModels.Length + 1);
             AlphaModels[AlphaModels.Length - 1] = ROMManager.SM64ROM.readSegmentAddr(segaddr);
         }
-        else if (drawlayer < 4 && Textures.FirstTexLoad)
+        else if (drawlayer < (4 - Convert.ToInt32(LevelScripts.IsRomManager)) && Textures.FirstTexLoad)
         {
             Array.Resize(ref OpaqueModels, OpaqueModels.Length + 1);
             OpaqueModels[OpaqueModels.Length - 1] = ROMManager.SM64ROM.readSegmentAddr(segaddr);

@@ -1,10 +1,10 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <asmv1:assembly xsi:schemaLocation="urn:schemas-microsoft-com:asm.v1 assembly.adaptive.xsd" manifestVersion="1.0" xmlns:asmv1="urn:schemas-microsoft-com:asm.v1" xmlns="urn:schemas-microsoft-com:asm.v2" xmlns:asmv2="urn:schemas-microsoft-com:asm.v2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:co.v1="urn:schemas-microsoft-com:clickonce.v1" xmlns:asmv3="urn:schemas-microsoft-com:asm.v3" xmlns:dsig="http://www.w3.org/2000/09/xmldsig#" xmlns:co.v2="urn:schemas-microsoft-com:clickonce.v2">
-  <asmv1:assemblyIdentity name="SM64Paint.exe" version="0.3.5.4" publicKeyToken="0000000000000000" language="neutral" processorArchitecture="amd64" type="win32" />
+  <asmv1:assemblyIdentity name="SM64Paint.exe" version="0.3.8.0" publicKeyToken="0000000000000000" language="neutral" processorArchitecture="amd64" type="win32" />
   <description asmv2:iconFile="SM64Paint.ico" xmlns="urn:schemas-microsoft-com:asm.v1" />
   <application />
   <entryPoint>
-    <assemblyIdentity name="SM64Paint" version="0.3.6.0" language="neutral" processorArchitecture="amd64" />
+    <assemblyIdentity name="SM64Paint" version="0.3.7.1" language="neutral" processorArchitecture="amd64" />
     <commandLine file="SM64Paint.exe" parameters="" />
   </entryPoint>
   <trustInfo>
@@ -43,11 +43,6 @@
     </dependentAssembly>
   </dependency>
   <dependency>
-    <dependentAssembly dependencyType="preRequisite" allowDelayedBinding="true">
-      <assemblyIdentity name="Costura" version="1.6.2.0" publicKeyToken="9919EF960D84173D" language="neutral" processorArchitecture="msil" />
-    </dependentAssembly>
-  </dependency>
-  <dependency>
     <dependentAssembly dependencyType="install" allowDelayedBinding="true" codebase="OpenTK.dll" size="4350464">
       <assemblyIdentity name="OpenTK" version="3.0.0.0" publicKeyToken="BAD199FE84EB3DF4" language="neutral" processorArchitecture="msil" />
       <hash>
@@ -72,14 +67,26 @@
     </dependentAssembly>
   </dependency>
   <dependency>
-    <dependentAssembly dependencyType="install" allowDelayedBinding="true" codebase="SM64Paint.exe" size="1538048">
-      <assemblyIdentity name="SM64Paint" version="0.3.6.0" language="neutral" processorArchitecture="amd64" />
+    <dependentAssembly dependencyType="install" allowDelayedBinding="true" codebase="SM64Paint.exe" size="1538560">
+      <assemblyIdentity name="SM64Paint" version="0.3.7.1" language="neutral" processorArchitecture="amd64" />
       <hash>
         <dsig:Transforms>
           <dsig:Transform Algorithm="urn:schemas-microsoft-com:HashTransforms.Identity" />
         </dsig:Transforms>
         <dsig:DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha256" />
-        <dsig:DigestValue>vZPjasMXkv68TRoByt4Y7mtrOydghRINVQoZcEtAWKg=</dsig:DigestValue>
+        <dsig:DigestValue>9J/GsTVgt/o0J+chD7aEjjQ6iwOcgmP9GTdQhvC574U=</dsig:DigestValue>
+      </hash>
+    </dependentAssembly>
+  </dependency>
+  <dependency>
+    <dependentAssembly dependencyType="install" allowDelayedBinding="true" codebase="System.Numerics.Vectors.dll" size="111840">
+      <assemblyIdentity name="System.Numerics.Vectors" version="4.1.2.0" publicKeyToken="B03F5F7F11D50A3A" language="neutral" processorArchitecture="msil" />
+      <hash>
+        <dsig:Transforms>
+          <dsig:Transform Algorithm="urn:schemas-microsoft-com:HashTransforms.Identity" />
+        </dsig:Transforms>
+        <dsig:DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha256" />
+        <dsig:DigestValue>UjXJVE36lXU1cmAtvDXtYgj8FvJn3MzCBCZYP39RYys=</dsig:DigestValue>
       </hash>
     </dependentAssembly>
   </dependency>
@@ -95,31 +102,31 @@
       </hash>
     </dependentAssembly>
   </dependency>
-  <file name="FodyWeavers.xml" size="79" writeableType="applicationData">
+  <file name="FodyWeavers.xml" size="76" writeableType="applicationData">
     <hash>
       <dsig:Transforms>
         <dsig:Transform Algorithm="urn:schemas-microsoft-com:HashTransforms.Identity" />
       </dsig:Transforms>
       <dsig:DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha256" />
-      <dsig:DigestValue>lFAYmxLG65eytnbYLn0/dk+vpv16xwkPiK03L/lwoNw=</dsig:DigestValue>
+      <dsig:DigestValue>wjrBZ5Q8EcgFpLpjx1onK7OYm6aIy2ld4FvQ1vA7rAI=</dsig:DigestValue>
     </hash>
   </file>
-  <file name="GPL_License.txt" size="18383">
+  <file name="GPL_License.txt" size="18045">
     <hash>
       <dsig:Transforms>
         <dsig:Transform Algorithm="urn:schemas-microsoft-com:HashTransforms.Identity" />
       </dsig:Transforms>
       <dsig:DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha256" />
-      <dsig:DigestValue>iS0KI+fJbIT8FEXteSy6ZodBOGG20W1qmi4EgOu1IJI=</dsig:DigestValue>
+      <dsig:DigestValue>kLZkpvvIKzhZXLs5YGJovvCy65t2sOngOCa+/iBBkLs=</dsig:DigestValue>
     </hash>
   </file>
-  <file name="SM64Paint.exe.config" size="529">
+  <file name="SM64Paint.exe.config" size="515">
     <hash>
       <dsig:Transforms>
         <dsig:Transform Algorithm="urn:schemas-microsoft-com:HashTransforms.Identity" />
       </dsig:Transforms>
       <dsig:DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha256" />
-      <dsig:DigestValue>prnaO55BZVym1wIW4pOfYBabQtXofI5PmB/fxaEDJOU=</dsig:DigestValue>
+      <dsig:DigestValue>joWlNXSEaFxGvAdvTEPpYKtCK4vQ6m4WyA1vvc23Be4=</dsig:DigestValue>
     </hash>
   </file>
   <file name="SM64Paint.ico" size="140660">

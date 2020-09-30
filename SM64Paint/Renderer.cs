@@ -41,6 +41,7 @@ class Renderer
     public static Color4 CubeSampleColour = new Color4(0f, 0f, 1f, 1f);
     public static float CubeRealRotation = 0;
     public static bool EdgesOption = false;
+    public static bool AlphaOnlyBox = false;
 
     public static void InitialiseView()
     {
@@ -130,6 +131,7 @@ class Renderer
 
     public static void EditVertex(Rectangle ClientRectangle, int Width, int Height, GLControl RenderPanel, Point pt, byte R, byte G, byte B, byte A, bool AlphaOnly)
     {
+        AlphaOnlyBox = AlphaOnly;
             byte[] color = new byte[4];
             Renderer.RenderColourBuffer(ClientRectangle, Width, Height, RenderPanel);
             GL.ReadPixels(pt.X, RenderPanel.Height - pt.Y - 1, 1, 1, OpenTK.Graphics.OpenGL.PixelFormat.Rgba, PixelType.UnsignedByte, color);
@@ -140,7 +142,16 @@ class Renderer
                 if (Addr == Vertex.CurrentVertexList[i])
                 {
                     UInt32 colour = (uint)((R << 24) | (G << 16) | (B << 8) | A);
-                    if (colour == ROMManager.SM64ROM.ReadFourBytes(Addr + 12)) return; //If it's the same, don't do anything
+                    if (AlphaOnly == false)
+                    { 
+                        if (colour == ROMManager.SM64ROM.ReadFourBytes(Addr + 12)) return; //If it's the same, don't do anything
+                    }
+                    else
+                    {
+                        colour = colour & 0xff;
+                        UInt32 alpha = ROMManager.SM64ROM.ReadFourBytes(Addr + 12) & 0xff;
+                        if (colour == alpha) return;
+                    }
                     for (uint j = 29; j >= 1 && j <= 29; j--) //Shift all mem back one
                     {
                         Vertex.OriginalVertexMem[j] = Vertex.OriginalVertexMem[j - 1];

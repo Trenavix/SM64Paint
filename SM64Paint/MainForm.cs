@@ -31,6 +31,7 @@ using System.Drawing.Drawing2D;
 using System.Runtime.InteropServices;
 using System.Drawing.Imaging;
 
+
 namespace SM64Paint
 {
     public partial class MainForm : Form
@@ -45,6 +46,7 @@ namespace SM64Paint
         String currentROMPath;
         readonly String PaletteFile = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "SM64Paint_Palette.png");
         public readonly float MouseSensitivity = 0.005f;
+        public bool AlphaBox = false;
 
         public MainForm()
         {
@@ -71,6 +73,7 @@ namespace SM64Paint
             CompositionTarget.Rendering += CompositionTarget_Rendering;
             this.TexturePreview.ContextMenuStrip = this.RightClickTexture;
             FormClosing += new FormClosingEventHandler(MainForm_FormClosing);
+            
         }
 
 
@@ -115,7 +118,8 @@ namespace SM64Paint
                 "Space: Toggle Edges\n" +
                 "C+Left Click: Grab Colour from model\n" +
                 "(Shift+)Page-Up/Down: Change level(area)\n" +
-                "Alt+Enter or Esc: Toggle Fullscreen",
+                "Alt+Enter or Esc: Toggle Fullscreen\n"+
+                "Left Shift + Remove Env Colors button to also remove opaque env colors",
                 "Controls", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 
@@ -392,6 +396,13 @@ namespace SM64Paint
         private void LevelArea_SelectedIndexChange(object sender, EventArgs e)
         {
             LevelArea = (uint)AreaComboBox.SelectedIndex;
+            // handle area switching for rom manager roms
+            if (LevelScripts.IsRomManager == true)
+            {
+                LevelScripts.NewSegAddr = ROMManager.SM64ROM.ReadFourBytes((ROMManager.SM64ROM.getSegmentStart(0x19) + 0x5f00 + ((LevelArea + 1) * 0x10)));
+                ROMManager.SM64ROM.setSegment(0x0E, LevelScripts.NewSegAddr);
+            }
+
             ROMManager.InitialiseModelLoad(ClientRectangle, RenderPanel, Width, Height);
             UpdateStatusText();
             if (ROMManager.SM64ROM.getSegmentStart(0x0E) < 0x1200000) { TexturesGroupBox.Visible = false; groupBoxForce.Visible = false; return; }
@@ -403,7 +414,7 @@ namespace SM64Paint
 
         private void ForceVertRGBAButton_Click(object sender, EventArgs e)
         {
-            DialogResult warningchoice = MessageBox.Show("Forcing VertRGBA should only be done on levels imported with SM64e and not modified. This is NOT safe and you" +
+            DialogResult warningchoice = MessageBox.Show("Forcing VertRGBA should only be done on imported, unmodified levels. This is NOT safe and you" +
                 " should back up your ROM in case. Force VertRGBA?", "Warning!", MessageBoxButtons.YesNo);
             if (warningchoice == DialogResult.No) return;
             Cursor.Current = Cursors.WaitCursor;
@@ -946,13 +957,14 @@ namespace SM64Paint
 
         private void RemoveEnvColoursButton_Click(object sender, EventArgs e)
         {
-            ROMManager.RemoveEnvColour();
+            ROMManager.RemoveEnvColour(keystate[Key.ShiftLeft]);
         }
 
         private void EnvColoursTip_Popup(object sender, PopupEventArgs e)
         {
 
         }
+
     }
 
 

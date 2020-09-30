@@ -79,7 +79,9 @@ public class ROMManager
         }
         for (uint j = addr; j < SM64ROM.getEndROMAddr(); j += 8) //Stuff is changed here
         {
-            if (SM64ROM.getByte(j) == 0x03 && SM64ROM.getByte(j + 1) == 0x86)
+            uint Shadefix = 0x86; // fixes forcergba in rom manager roms made with newer versions of rom manager
+			if (LevelScripts.IsRomManager == true) { Shadefix = 0x88; }
+            if (SM64ROM.getByte(j) == 0x03 && SM64ROM.getByte(j + 1) == Shadefix)
             {
                 SM64ROM.WriteEightBytes(j, 0xB700000000020000);
                 SM64ROM.cutBytes(j, B8Addr - 8, 8);
@@ -152,10 +154,13 @@ public class ROMManager
         }
     }
 
-    public static void RemoveEnvColour()
+    public static void RemoveEnvColour(bool key)
     {
-        RemoveOpaqueEnvColour();
-        RemoveAlphaEnvColour();
+        if (key == true) 
+    { 
+       RemoveOpaqueEnvColour(); 
+    }
+    RemoveAlphaEnvColour();
     }
     public static void RemoveOpaqueEnvColour()
     {
@@ -165,7 +170,7 @@ public class ROMManager
             uint addr = GeoLayouts.OpaqueModels[i];
             for (uint j = addr; j < SM64ROM.getEndROMAddr(); j += 8)
             {
-                if (SM64ROM.getByte(j) == 0xFB) SM64ROM.WriteEightBytes(j, 0x0000000000000000); //Get rid of env colour combiners with a NOP
+                if (SM64ROM.getByte(j) == 0xFB) SM64ROM.WriteEightBytes(j, 0xFC127E24FFFFFDFE); //Get rid of env colour combiners with a NOP
                 else if (SM64ROM.getByte(j) == 0xB8) break;
             }
         }
@@ -179,7 +184,7 @@ public class ROMManager
             uint addr = GeoLayouts.AlphaModels[i];
             for (uint j = addr; j < SM64ROM.getEndROMAddr(); j += 8)
             {
-                if (SM64ROM.getByte(j) == 0xFB) SM64ROM.WriteEightBytes(j, 0x0000000000000000); //Get rid of env colour combiners with a NOP
+                if (SM64ROM.getByte(j) == 0xFB) SM64ROM.WriteEightBytes(j, 0xFC121E24FF3FF9FC); //Get rid of env colour combiners with a NOP
                 else if (SM64ROM.getByte(j) == 0xB8) break;
             }
         }

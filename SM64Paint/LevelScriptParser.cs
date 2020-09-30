@@ -25,7 +25,7 @@ public class LevelScripts
     public static uint[] GeoLayoutOffsets = new uint[0];
     public static uint[][] ObjectGeoOffsets = new uint[0x1F][];
     static uint NewSegment;
-    static uint NewSegAddr;
+    public static uint NewSegAddr;
     static UInt32 JumpSegAddr;
     static uint JumpAddr;
     static uint BeginMIO0;
@@ -34,7 +34,7 @@ public class LevelScripts
     public static uint ExtCollisionPointer = 0; //Needed to repoint for extended roms
     public static uint Ext0EBankEnd = 0;
     public static String[] DebugScript;
-
+    public static bool IsRomManager = false;
     public static void ParseLevelScripts(ROM SM64ROM, UInt32 offset)
     {
         DebugScript = new String[0];
@@ -47,7 +47,7 @@ public class LevelScripts
         {
             Array.Resize(ref DebugScript, DebugScript.Length + 1);
             DebugScript[DebugScript.Length - 1] = "";
-        } 
+        }
     }
 
     public static void DecodeLevelScripts(ROM SM64ROM, UInt32 offset)
@@ -64,7 +64,7 @@ public class LevelScripts
                 {
                     DebugScript[DebugScript.Length - 1] += SM64ROM.getByte(j).ToString("x") + " ";
                 }
-            } 
+            }
             if (increment == 0 || SM64ROM.getByte(i) > 0x3C || ExitDecode) return;
             switch (SM64ROM.getByte(i))
             {
@@ -72,11 +72,23 @@ public class LevelScripts
                 case 0x01:
                     NewSegment = SM64ROM.getByte(i + 3);
                     NewSegAddr = SM64ROM.ReadFourBytes(i + 4);
+
+
+                    // jank way of detecting rom manager roms but as far as I can tell it's basically how pilz added it to quad64...
+                    uint NewSegEnd = SM64ROM.ReadFourBytes(i + 8);
+                    if (NewSegment == 0x19)
+                    {
+                        if ((NewSegEnd - NewSegAddr) < 0x6000) { IsRomManager = false; }
+                        else { IsRomManager = true; }
+                    }
+                    //else { IsRomManager = false;  }
+
                     SM64ROM.setSegment(NewSegment, NewSegAddr);
                     //if (NewSegment != 0x0E) break;
                     JumpSegAddr = SM64ROM.ReadFourBytes(i + 12);
                     JumpAddr = SM64ROM.readSegmentAddr(JumpSegAddr);
-                    
+
+
                     //i = JumpAddr -increment;
                     LevelScripts.DecodeLevelScripts(SM64ROM, JumpAddr);
                     break;
@@ -105,7 +117,7 @@ public class LevelScripts
                 case 0x07:
                     return;
                 case 0x0C:
-                    if (SM64ROM.getByte(i + 7) != SelectedLevel+4) break; //num is level ID
+                    if (SM64ROM.getByte(i + 7) != SelectedLevel + 4) break; //num is level ID
                     JumpSegAddr = SM64ROM.ReadFourBytes(i + 8);
                     LevelScripts.DecodeLevelScripts(SM64ROM, SM64ROM.readSegmentAddr(JumpSegAddr));
                     return;
@@ -114,16 +126,12 @@ public class LevelScripts
                     break;
                 case 0x17:
                     NewSegment = SM64ROM.getByte(i + 3);
-                    NewSegAddr = SM64ROM.ReadFourBytes(i + 4);
+                    if ((NewSegment == 0x0E) && (IsRomManager == true)) { NewSegAddr = SM64ROM.ReadFourBytes(SM64ROM.getSegmentStart(0x19) + 0x5f10); } // get rom seg ptrs for rom manager
+                    else { NewSegAddr = SM64ROM.ReadFourBytes(i + 4); }
                     SM64ROM.setSegment(NewSegment, NewSegAddr);
-                    if (NewSegment == 0x0E)
-                    {
-                        Ext0EBankEnd = SM64ROM.ReadFourBytes(i + 8);
-                        Console.Write("Segment 0x0E Location in ROM:\n0x"+SM64ROM.getSegmentStart(0x0E).ToString("x8"));
-                    } 
                     break;
                 case 0x18:
-                    //MIO0 segment
+                //MIO0 segment
                 case 0x1A:
                     //MIO0 segment
                     NewSegment = SM64ROM.getByte(i + 3);
@@ -136,8 +144,8 @@ public class LevelScripts
                     uint SegAddr = SM64ROM.ReadFourBytes(i + 4);
                     if (SM64ROM.getByte(i + 4) == 0x0E || SM64ROM.getByte(i + 4) == 0x19) //Level bank
                     {
-                        Array.Resize(ref GeoLayoutOffsets, GeoLayoutOffsets.Length+1);
-                        GeoLayoutOffsets[SM64ROM.getByte(i + 2)-1] = SM64ROM.readSegmentAddr(SegAddr);
+                        Array.Resize(ref GeoLayoutOffsets, GeoLayoutOffsets.Length + 1);
+                        GeoLayoutOffsets[SM64ROM.getByte(i + 2) - 1] = SM64ROM.readSegmentAddr(SegAddr);
                         GeoFound = true;
                         if (SelectedLevel == 21) return; // End Cake Loop evasion
                         break;
@@ -157,7 +165,7 @@ public class LevelScripts
                     //Default Mario Position
                     short YRotation = (short)SM64ROM.ReadTwoBytes(i + 4);
                     int X = (short)-SM64ROM.ReadTwoBytes(i + 6);
-                    int Y = (short)SM64ROM.ReadTwoBytes(i + 8)+250; //+250 to be above ground
+                    int Y = (short)SM64ROM.ReadTwoBytes(i + 8) + 250; //+250 to be above ground
                     int Z = (short)-SM64ROM.ReadTwoBytes(i + 10);
                     Vector3 location = new Vector3(X, Y, Z) * Renderer.WorldScale * Renderer.GameScale;
                     Renderer.cam.SetCamPosition(location);
@@ -219,5 +227,3 @@ public class LevelScripts
     }
 
 }
-
-
